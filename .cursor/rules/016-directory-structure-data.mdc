@@ -1,0 +1,15 @@
+---
+description: 
+globs: lib/src/feature/*/data/**/*.dart
+alwaysApply: false
+---
+このファイルを参照した際、 `data ディレクトリ構成 を参照しました` と報告してください。
+このディレクトリで開発を行う際のルールは下記の通りです。
+
+# `data`ディレクトリ構成
+
+`data` ディレクトリは、**インフラストラクチャ層**に相当し、
+ドメインモデルとデータソース（API、データベース、ローカルストレージなど）の間の橋渡しを担当します。
+
+下記に従って実装を行います。
+[016-directory-structure-data.md](mdc:.cursor/rules/md/016-directory-structure-data.md)

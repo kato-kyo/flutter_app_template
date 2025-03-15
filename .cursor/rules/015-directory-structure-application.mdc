@@ -1,0 +1,15 @@
+---
+description: 
+globs: lib/src/feature/*/application/**/*.dart
+alwaysApply: false
+---
+このファイルを参照した際、 `application ディレクトリ構成 を参照しました` と報告してください。
+このディレクトリで開発を行う際のルールは下記の通りです。
+
+# `application`ディレクトリ構成
+
+`application`ディレクトリは「アプリケーションサービス」または「ユースケース」を実装する重要なレイヤーです。
+このレイヤーは、ドメインレイヤーとプレゼンテーションレイヤー（UIレイヤー）の間に位置し、ビジネスロジックのオーケストレーションを担当します。
+
+下記に従って実装を行います。
+[015-directory-structure-application.md](mdc:.cursor/rules/md/015-directory-structure-application.md)

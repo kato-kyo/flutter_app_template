@@ -1,0 +1,13 @@
+---
+description: Apply this rule to the entire repository
+globs: 
+alwaysApply: true
+---
+
+このファイルを参照した際、 `ディレクトリ構成 を参照しました` と報告してください。
+このディレクトリで開発を行う際のルールは下記の通りです。
+
+これは Flutter プロジェクトです。
+`Domain-Driven Design`で開発をおこうため、lib ディレクトリの構成は下記の例に従います。
+
+[011-directory-structure.md](mdc:.cursor/rules/md/011-directory-structure.md)

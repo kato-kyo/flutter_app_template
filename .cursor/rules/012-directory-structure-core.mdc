@@ -1,0 +1,15 @@
+---
+description: 
+globs: lib/src/core/**/*.dart
+alwaysApply: false
+---
+このファイルを参照した際、 `core ディレクトリ構成 を参照しました` と報告してください。
+このディレクトリで開発を行う際のルールは下記の通りです。
+
+# `core`ディレクトリ構成
+
+`core`ディレクトリは、アプリケーション全体で共通して使用される基盤的なコンポーネントを格納する場所です。
+このディレクトリは、アプリケーションの最も基本的な部分を構成し、他のモジュールから依存される要素を含みます。
+
+下記に従って実装を行います。
+[012-directory-structure-core.md](mdc:.cursor/rules/md/012-directory-structure-core.md)

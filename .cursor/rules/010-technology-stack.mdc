@@ -1,0 +1,13 @@
+---
+description: Apply this rule to the entire repository
+globs: 
+alwaysApply: true
+---
+
+このファイルを参照した際、 `技術スタック を参照しました` と報告してください。
+この Flutter プロジェクトでは、下記の パッケージ・プラグインを利用してください。
+
+[011-directory-structure.md](mdc:.cursor/rules/md/011-directory-structure.md)
+
+他に必要となる パッケージ・プラグインがあれば、報告の上で導入してください。
+その際、候補となる類似のパッケージ・プラグインを幾つか提示し、一番適切だと判断した理由を示してください。

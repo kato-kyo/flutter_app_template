@@ -1,0 +1,15 @@
+---
+description: 
+globs: lib/src/feature/*/domain/**/*.dart
+alwaysApply: false
+---
+このファイルを参照した際、 `domain ディレクトリ構成 を参照しました` と報告してください。
+このディレクトリで開発を行う際のルールは下記の通りです。
+
+# `domain`ディレクトリ構成
+
+`domain` ディレクトリはDomain-Driven Design (DDD)アーキテクチャの中核となる層で、ビジネスロジックとルールを表現する場所です。
+この層はUIやデータアクセスなどの外部の関心事から完全に独立しており、アプリケーションのコアとなるビジネスルールを定義します。
+
+下記に従って実装を行います。
+[013-directory-structure-domain.md](mdc:.cursor/rules/md/013-directory-structure-domain.md)

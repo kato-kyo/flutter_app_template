@@ -1,0 +1,15 @@
+---
+description: 
+globs: lib/src/shared/**/*.dart
+alwaysApply: false
+---
+このファイルを参照した際、 `shared ディレクトリ構成 を参照しました` と報告してください。
+このディレクトリで開発を行う際のルールは下記の通りです。
+
+# `shared`ディレクトリ構成
+
+`shared`ディレクトリは、アプリケーション全体で共通して使用される基盤的なコンポーネントを格納する場所です。
+このディレクトリは、アプリケーションの最も基本的な部分を構成し、他のモジュールから依存される要素を含みます。
+
+下記に従って実装を行います。
+[017-directory-structure-shared.md](mdc:.cursor/rules/md/017-directory-structure-shared.md)
