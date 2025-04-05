@@ -1,0 +1,367 @@
+---
+description: 
+globs: lib/src/feature/*/data/**/*.dart
+alwaysApply: false
+---
+このファイルを参照した際、 `ファイル名`を参照しました と報告してください。
+
+このディレクトリで開発を行う際のルールは下記の通りです。
+
+---
+# Flutter DDD開発 `data`ディレクトリ構成
+
+`data` ディレクトリは、**インフラストラクチャ層**に相当し、
+ドメインモデルとデータソース（API、データベース、ローカルストレージなど）の間の橋渡しを担当します。
+
+`lib/src/feature/{機能名}/data/`に配置します。
+
+**重要**
+この例はローカルストレージを hive_ce で実装していますが、
+何を利用するかについては、事前に合意をとってください。
+
+選択肢の例:
+- 設定値などの軽量なデータ: SharedPreference
+- リレーションが不要な構造化データ: hive_ce
+- リレーションが必要なデータ: Drift
+
+## 構造
+
+例
+```
+feature/
+  |- todo/  # feature_name
+  |  |- data
+  |  |  |- datasource/
+  |  |  |  |- todo_datasource.dart (optional, interface)
+  |  |  |  |- local/
+  |  |  |  |  |- todo_local_datasource.dart
+  |  |  |  |- remote/
+  |  |  |  |  |- todo_remote_datasource.dart
+  |  |  |- repository/
+  |  |  |  |- todo_repository_impl.dart
+  |  |  |- dto/
+  |  |  |  |- todo_dto.dart
+```
+
+
+`data` ディレクトリは主に以下のコンポーネントで構成されています：
+
+### 1. Repository 実装 (`repository/`)
+
+```
+data/
+  |- repository/
+     |- auth_repository_impl.dart  // 例：認証リポジトリの実装
+     |- todo_repository_impl.dart  // 例：TODOリポジトリの実装
+```
+
+- **役割**: ドメイン層で定義されたリポジトリインターフェース（`domain/repository/`）の実装を提供します
+- **責務**:
+  - 外部データソース（REST API、GraphQL、データベース、Hive など）との通信
+  - データの取得、保存、更新、削除のロジックの実装
+  - データソースからのレスポンスを適切なドメインエンティティに変換
+  - エラーハンドリングとエラー変換
+
+### 2. データ転送オブジェクト (`dto/`)
+
+```
+data/
+  |- dto/
+     |- user_dto.dart  // 例：ユーザーDTOの定義
+     |- todo_dto.dart  // 例：TODOアイテムのDTO
+```
+
+- **役割**: データの変換を担当するオブジェクト
+- **責務**:
+  - JSONやその他の外部データ形式とドメインモデル間の変換
+  - APIやデータベースのデータ構造をアプリケーションの内部ドメインモデルに適合させる
+  - `toJson`、`fromJson` メソッドの提供
+  - バリデーションロジックの提供（オプション）
+
+### 3. データソース (`datasource/`) 
+
+```
+data/
+  |- datasource/
+  |  |- auth_data_source.dart # option (interface)
+  |  |- remote/
+  |  |  |- auth_api.dart
+  |  |- local/
+  |  |  |- auth_local_store.dart
+```
+
+- **役割**: 特定のデータソースとの通信を抽象化
+- **責務**:
+  - API呼び出し、データベースクエリ、ファイル操作などの実装
+  - 異なるデータソース（リモート/ローカル）の統合
+  - キャッシュロジックの実装
+
+#### データソースの具体例:
+
+##### リモートデータソース (`remote/auth_api.dart`)
+
+```dart
+// datasource/remote/auth_api.dart
+class AuthApi {
+  final Dio _dio;
+  
+  AuthApi(this._dio);
+  
+  Future<Map<String, dynamic>> login({
+    required String email, 
+    required String password
+  }) async {
+    try {
+      final response = await _dio.post(
+        '/api/auth/login',
+        data: {
+          'email': email,
+          'password': password,
+        },
+      );
+      
+      return response.data;
+    } on DioError catch (e) {
+      if (e.response?.statusCode == 401) {
+        throw UnauthorizedException('無効な認証情報です');
+      } else if (e.type == DioErrorType.connectTimeout) {
+        throw NetworkException('接続タイムアウトが発生しました');
+      }
+      throw DataSourceException('ログイン中にエラーが発生しました: ${e.message}');
+    }
+  }
+  
+  Future<Map<String, dynamic>> register({
+    required String email, 
+    required String password,
+    required String name,
+  }) async {
+    // 登録ロジックの実装
+    // ...
+  }
+  
+  Future<Map<String, dynamic>> getUserProfile(String token) async {
+    try {
+      final response = await _dio.get(
+        '/api/users/profile',
+        options: Options(
+          headers: {'Authorization': 'Bearer $token'},
+        ),
+      );
+      
+      return response.data;
+    } on DioError catch (e) {
+      // エラーハンドリング
+      throw DataSourceException('プロフィール取得中にエラーが発生しました');
+    }
+  }
+}
+```
+
+##### ローカルデータソース (`local/auth_local_store.dart`)
+
+```dart
+// datasource/local/auth_local_store.dart
+import 'package:hive_ce/hive_ce.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+
+class AuthLocalStore {
+  static const String _authBoxName = 'auth_box';
+  static const String _tokenKey = 'token';
+  static const String _userProfileKey = 'user_profile';
+  
+  final Hive _hive;
+  final FlutterSecureStorage _secureStorage;
+  
+  AuthLocalStore(this._hive, this._secureStorage);
+  
+  // 初期化メソッド
+  Future<void> init() async {
+    // セキュアストレージからキーを取得
+    final encryptionKey = await _getEncryptionKey();
+    
+    // 暗号化されたボックスを開く
+    await _hive.openBox(
+      _authBoxName,
+      encryptionCipher: HiveAesCipher(encryptionKey),
+    );
+  }
+  
+  // セキュアな暗号化キーの取得（または生成）
+  Future<List<int>> _getEncryptionKey() async {
+    const secureKey = 'encryption_key';
+    String? keyString = await _secureStorage.read(key: secureKey);
+    
+    if (keyString == null) {
+      // 新しい暗号化キーを生成
+      final key = Hive.generateSecureKey();
+      keyString = base64UrlEncode(key);
+      await _secureStorage.write(key: secureKey, value: keyString);
+      return key;
+    }
+    
+    return base64Url.decode(keyString);
+  }
+  
+  // トークンの保存
+  Future<void> saveToken(String token) async {
+    final box = await _hive.box(_authBoxName);
+    await box.put(_tokenKey, token);
+  }
+  
+  // トークンの取得
+  String? getToken() {
+    final box = _hive.box(_authBoxName);
+    return box.get(_tokenKey);
+  }
+  
+  // トークンの削除（ログアウト時など）
+  Future<void> deleteToken() async {
+    final box = await _hive.box(_authBoxName);
+    await box.delete(_tokenKey);
+  }
+  
+  // ユーザープロフィールの保存
+  Future<void> saveUserProfile(Map<String, dynamic> profile) async {
+    final box = await _hive.box(_authBoxName);
+    await box.put(_userProfileKey, profile);
+  }
+  
+  // ユーザープロフィールの取得
+  Map<String, dynamic>? getUserProfile() {
+    final box = _hive.box(_authBoxName);
+    return box.get(_userProfileKey);
+  }
+  
+  // 認証情報の完全クリア
+  Future<void> clearAuthData() async {
+    final box = await _hive.box(_authBoxName);
+    await box.clear();
+  }
+  
+  // トークンの有効性確認（単純にトークンの存在チェック）
+  bool hasValidToken() {
+    final token = getToken();
+    return token != null && token.isNotEmpty;
+  }
+}
+```
+
+##### データソースの抽象化インターフェース (オプション)
+
+```dart
+// datasource/auth_data_source.dart
+abstract class AuthDataSource {
+  Future<Map<String, dynamic>> login(String email, String password);
+  Future<Map<String, dynamic>> register(String email, String password, String name);
+  Future<Map<String, dynamic>> getUserProfile();
+}
+
+// datasource/remote/remote_auth_data_source.dart
+class RemoteAuthDataSource implements AuthDataSource {
+  final AuthApi _authApi;
+  final AuthLocalStore _localStore;
+  
+  RemoteAuthDataSource(this._authApi, this._localStore);
+  
+  @override
+  Future<Map<String, dynamic>> login(String email, String password) async {
+    final response = await _authApi.login(email: email, password: password);
+    
+    // トークンをローカルに保存
+    if (response.containsKey('token')) {
+      await _localStore.saveToken(response['token']);
+    }
+    
+    return response;
+  }
+  
+  @override
+  Future<Map<String, dynamic>> register(String email, String password, String name) async {
+    // 実装...
+  }
+  
+  @override
+  Future<Map<String, dynamic>> getUserProfile() async {
+    final token = _localStore.getToken();
+    if (token == null) {
+      throw UnauthorizedException('認証トークンがありません');
+    }
+    
+    return await _authApi.getUserProfile(token);
+  }
+}
+```
+
+## 具体例: 認証フィーチャー
+
+例えば、認証機能におけるデータレイヤーの役割を見てみましょう：
+
+```dart
+// dto/user_dto.dart
+class UserDto {
+  final String id;
+  final String email;
+  
+  UserDto({required this.id, required this.email});
+  
+  factory UserDto.fromJson(Map<String, dynamic> json) => UserDto(
+    id: json['id'],
+    email: json['email'],
+  );
+  
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'email': email,
+  };
+  
+  // ドメインエンティティへの変換
+  User toDomain() => User(
+    id: id,
+    email: Email(email),
+  );
+}
+
+// repository/auth_repository_impl.dart
+class AuthRepositoryImpl implements AuthRepository {
+  final AuthApi _authApi;
+  final AuthLocalStore _localStore;
+  
+  AuthRepositoryImpl(this._authApi, this._localStore);
+  
+  @override
+  Future<Result<User>> login(Email email, Password password) async {
+    try {
+      final response = await _authApi.login(
+        email: email.value,
+        password: password.value,
+      );
+      
+      final userDto = UserDto.fromJson(response);
+      final user = userDto.toDomain();
+      
+      // トークンをローカルに保存
+      await _localStore.saveToken(response['token']);
+      
+      return Result.success(user);
+    } catch (e) {
+      return Result.failure(AuthException('ログインに失敗しました'));
+    }
+  }
+  
+  // その他のメソッド実装...
+}
+```
+
+## データレイヤーの設計原則
+
+1. **依存の方向**: データレイヤーは常にドメインレイヤーに依存し、その逆はありません
+2. **単一責任**: 各クラスは明確な単一の責任を持つべき
+3. **抽象化**: データソースの詳細はこのレイヤーに隠蔽される
+4. **テスト容易性**: モックやスタブを使用したテストが容易であるべき
+
+## まとめ
+
+`data` ディレクトリは、DDDアーキテクチャにおいて外部世界とドメインモデルを接続する重要な役割を果たします。
+このレイヤーは、外部データソースの詳細をアプリケーションの残りの部分から隠蔽し、
+ドメインモデルが純粋なビジネスロジックに集中できるようにします。

@@ -1,6 +1,13 @@
+---
+description: Apply this rule to the entire repository
+globs: 
+alwaysApply: true
+---
+このファイルを参照した際、 `ファイル名`を参照しました と報告してください。
 
+このディレクトリで開発を行う際のルールは下記の通りです。
 
-
+---
 これは Flutter プロジェクトです。
 `Domain-Driven Design`で開発をおこうため、lib ディレクトリの構成は下記の例に従います。
 
@@ -78,13 +85,17 @@ lib/
   |  |  |  |  |  |- auth_repository_impl.dart
   |  |  |  |  |- dto/
   |  |  |  |  |  |- user_dto.dart
+  |  |  |  |  |- datasource/
+  |  |  |  |  |  |- user_datasource.dart # interface
+  |  |  |  |  |  |- local_user_database.dart
+  |  |  |  |  |  |- remote_user_api.dart
   |  |  | 
   |  |  |- todo/
   |  |  |  |- domain/
   |  |  |  |  |- entity/
   |  |  |  |  |  |- todo.dart
   |  |  |  |  |- repository/
-  |  |  |  |  |  |- todo_repository.dart
+  |  |  |  |  |  |- todo_repository.dart # interface
   |  |  |  |  |- value_object/
   |  |  |  |  |  |- todo_id.dart
   |  |  |  |  |  |- todo_status.dart
@@ -97,6 +108,10 @@ lib/
   |  |  |  |  |  |- todo_repository_impl.dart
   |  |  |  |  |- dto/
   |  |  |  |  |  |- todo_dto.dart
+  |  |  |  |  |- datasource/
+  |  |  |  |  |  |- todo_datasource.dart # interface
+  |  |  |  |  |  |- local_todo_database.dart
+  |  |  |  |  |  |- remote_todo_api.dart
 test/
   |- src/ (same as lib)
   |  |- ui/

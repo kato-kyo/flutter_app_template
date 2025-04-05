@@ -1,0 +1,212 @@
+---
+description: 
+globs: lib/src/feature/*/application/**/*.dart
+alwaysApply: false
+---
+このファイルを参照した際、 `ファイル名`を参照しました と報告してください。
+
+このディレクトリで開発を行う際のルールは下記の通りです。
+
+---
+# Flutter DDD開発 `application`ディレクトリ構成
+
+`application`ディレクトリは「アプリケーションサービス」または「ユースケース」を実装する重要なレイヤーです。
+このレイヤーは、ドメインレイヤーとプレゼンテーションレイヤー（UIレイヤー）の間に位置し、ビジネスロジックのオーケストレーションを担当します。
+
+`lib/src/feature/{機能名}/application/`に配置します。
+
+## 構造
+
+例:
+```
+feature/
+ |- auth/  # feature_name
+ |  |- application/ 
+ |  |  |- login_service.dart 
+```
+
+## applicationレイヤーの概要
+
+`application`ディレクトリは「アプリケーションサービス」または「ユースケース」を実装する重要なレイヤーです。
+このレイヤーは、ドメインレイヤーとプレゼンテーションレイヤー（UIレイヤー）の間に位置し、ビジネスロジックのオーケストレーションを担当します。
+
+## applicationレイヤーの主な責務
+
+1. **ユースケースの実装**
+   - アプリケーションの具体的なユースケース（ログイン、登録、TODO作成など）を実装
+   - 各ユースケースは一つの具体的な操作や処理フローを表現
+
+2. **ドメインオブジェクトの調整**
+   - 複数のドメインオブジェクト（エンティティ、値オブジェクト）間の相互作用を調整
+   - 複雑なビジネスプロセスのワークフローを制御
+
+3. **トランザクション境界の定義**
+   - 一連の操作がアトミックに実行されるべきトランザクションの境界を定義
+   - 操作の一貫性を保証
+
+4. **入出力変換**
+   - UIレイヤーからの入力をドメインモデルが扱える形式に変換
+   - ドメインモデルの出力をUIレイヤーが表示できる形式に変換
+
+## 具体例による説明
+
+提示されたディレクトリ構造から、以下のような例が見られます：
+
+### 認証機能の例
+
+```
+feature/auth/application/
+  |- login_service.dart  // ログイン固有のユースケース
+  |- register_service.dart // 登録固有のユースケース
+```
+
+`login_service.dart`の実装例：
+
+```dart
+class LoginService {
+  final AuthRepository _authRepository;
+  final PasswordHasher _passwordHasher;
+  
+  LoginService(this._authRepository, this._passwordHasher);
+  
+  Future<Result<User>> login(Email email, Password password) async {
+    try {
+      // パスワードのハッシュ化
+      final hashedPassword = _passwordHasher.hash(password);
+      
+      // リポジトリを使用してユーザー認証
+      final user = await _authRepository.authenticateUser(email, hashedPassword);
+      
+      // 成功結果を返す
+      return Result.success(user);
+    } on AuthException catch (e) {
+      // 認証失敗の場合はエラー結果を返す
+      return Result.failure(e);
+    }
+  }
+}
+```
+
+### TODO機能の例
+
+```
+feature/todo/application/
+  |- todo_service.dart  // TODOに関連する全てのユースケース
+```
+
+`todo_service.dart`の実装例：
+
+```dart
+class TodoService {
+  final TodoRepository _todoRepository;
+  
+  TodoService(this._todoRepository);
+  
+  // TODO作成ユースケース
+  Future<Result<Todo>> createTodo(String title, String description) async {
+    try {
+      // 値オブジェクトを使用した新しいTODOエンティティの作成
+      final todo = Todo(
+        id: TodoId.generate(),
+        title: title,
+        description: description,
+        status: TodoStatus.notStarted(),
+        createdAt: DateTime.now(),
+      );
+      
+      // リポジトリを使用してTODOを保存
+      await _todoRepository.save(todo);
+      
+      return Result.success(todo);
+    } on Exception catch (e) {
+      return Result.failure(e);
+    }
+  }
+  
+  // TODO一覧取得ユースケース
+  Future<Result<List<Todo>>> getAllTodos() async {
+    try {
+      final todos = await _todoRepository.getAll();
+      return Result.success(todos);
+    } on Exception catch (e) {
+      return Result.failure(e);
+    }
+  }
+  
+  // TODO状態更新ユースケース
+  Future<Result<Todo>> updateTodoStatus(TodoId id, TodoStatus newStatus) async {
+    try {
+      // 既存のTODOを取得
+      final todoResult = await _todoRepository.getById(id);
+      if (todoResult.isFailure) {
+        return Result.failure(todoResult.error);
+      }
+      
+      final todo = todoResult.value;
+      // 状態を更新した新しいTODOを作成
+      final updatedTodo = todo.copyWith(status: newStatus);
+      
+      // 更新されたTODOを保存
+      await _todoRepository.update(updatedTodo);
+      
+      return Result.success(updatedTodo);
+    } on Exception catch (e) {
+      return Result.failure(e);
+    }
+  }
+}
+```
+
+## applicationレイヤーとドメインレイヤーの違い
+
+- **ドメインレイヤー**：ビジネスルールとロジックを含む中核レイヤー。エンティティ、値オブジェクト、ドメインサービスなどで構成される。
+- **アプリケーションレイヤー**：ドメインレイヤーのオブジェクトを組み合わせて特定のユースケースを実現するレイヤー。
+
+## applicationレイヤーとUIレイヤーの相互作用
+
+アプリケーションレイヤーはUIレイヤー（`ui/`ディレクトリ）と以下のように相互作用します：
+
+1. UIレイヤーの状態管理（state）がアプリケーションサービスのメソッドを呼び出す
+2. アプリケーションサービスは操作を実行し、`Result<T>`などの形で結果を返す
+3. UIレイヤーは結果に基づいて画面表示を更新する
+
+例：
+```dart
+// ui/todo/state/todo_state.dart
+class TodoState extends _TodoState {
+  final TodoService _todoService;
+  
+  TodoState(this._todoService);
+  
+  Future<void> loadTodos() async {
+    state = state.copyWith(isLoading: true);
+    
+    final result = await _todoService.getAllTodos();
+    
+    if (result.isSuccess) {
+      state = state.copyWith(
+        todos: result.value,
+        isLoading: false,
+        error: null,
+      );
+    } else {
+      state = state.copyWith(
+        isLoading: false,
+        error: result.error.toString(),
+      );
+    }
+  }
+}
+```
+
+## まとめ
+
+applicationディレクトリは、DDDアーキテクチャにおいて以下の役割を果たします：
+
+1. ドメインロジックとUIを橋渡しする
+2. 具体的なユースケースを実装する
+3. 複数のドメインオブジェクトの協調を調整する
+4. トランザクション境界を定義する
+5. 結果を適切な形で返却する
+
+これにより、アプリケーションの関心事が適切に分離され、テスト容易性、保守性、拡張性が向上します。

@@ -1,0 +1,549 @@
+---
+description: 
+globs: lib/src/core/**/*.dart
+alwaysApply: false
+---
+このファイルを参照した際、 `ファイル名`を参照しました と報告してください。
+
+このディレクトリで開発を行う際のルールは下記の通りです。
+
+---
+# Flutter DDD開発 `core`ディレクトリ構成
+
+`core`ディレクトリは、アプリケーション全体で共通して使用される基盤的なコンポーネントを格納する場所です。
+このディレクトリは、アプリケーションの最も基本的な部分を構成し、他のモジュールから依存される要素を含みます。
+
+`lib/src/core/`に配置します。
+
+## 構造
+
+```
+core/
+ ├── constant/       # アプリ全体で使用される定数
+ ├── exception/      # 例外処理関連
+ ├── localization/   # 多言語対応（flutter_localizationパッケージ使用）
+ ├── router/         # ルーティング設定（go_routerパッケージ使用）
+ ├── theme/          # テーマ設定
+ └── util/           # ユーティリティ機能
+```
+
+## 外部パッケージ依存関係
+
+このプロジェクトでは以下の外部パッケージを使用しています：
+
+- **flutter_localizations**: 多言語対応の実装に使用
+- **go_router**: ルーティングの実装に使用
+- **logger**: アプリケーションのログ出力に使用
+
+`pubspec.yaml` に以下の依存関係を追加する必要があります：
+
+```yaml
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+  intl: ^0.18.0  # flutter_localizationsに必要
+  go_router: ^12.0.0  # バージョンは適宜更新してください
+  logger: ^2.0.0      # バージョンは適宜更新してください
+
+dev_dependencies:
+  build_runner: ^2.4.0
+  go_router_builder: ^2.4.0  # go_routerのコード生成
+
+# 多言語対応のための生成設定
+flutter:
+  generate: true  # 翻訳ファイルから自動生成を有効化
+```
+
+
+## 各ディレクトリの役割
+
+### constant
+
+アプリケーション全体で使用される定数値を定義します。
+
+```dart
+// app_constant.dart
+class AppConstants {
+  static const String appName = 'MyApp';
+  static const int apiTimeout = 30; // seconds
+  static const String apiBaseUrl = 'https://api.example.com';
+}
+```
+
+### exception
+
+アプリケーション固有の例外クラスとエラーハンドリングメカニズムを定義します。
+
+```dart
+// app_exception.dart
+class AppException implements Exception {
+  final String message;
+  final String? code;
+  final dynamic originalException;
+
+  const AppException({
+    required this.message,
+    this.code,
+    this.originalException,
+  });
+
+  factory AppException.network({String? message}) {
+    return AppException(
+      message: message ?? 'ネットワークエラーが発生しました',
+      code: 'NETWORK_ERROR',
+    );
+  }
+
+  factory AppException.notFound({String? message}) {
+    return AppException(
+      message: message ?? 'リソースが見つかりませんでした',
+      code: 'NOT_FOUND',
+    );
+  }
+
+  factory AppException.unexpected({String? message}) {
+    return AppException(
+      message: message ?? '予期しないエラーが発生しました',
+      code: 'UNEXPECTED_ERROR',
+    );
+  }
+}
+```
+
+### localization
+
+アプリケーションの多言語対応に関するクラスやヘルパーを定義します。
+flutter_localizations パッケージを使用します。
+
+@web https://docs.flutter.dev/ui/accessibility-and-internationalization/internationalization
+
+```dart
+// l10n/app_en.arb
+{
+  "@@locale": "en",
+  "hello": "Hello",
+}
+```
+
+```dart
+// l10n/app_ja.arb
+{
+  "@@locale": "ja",
+  "hello": "こんにちは",
+  "statusDeleted": "削除済み"
+}
+```
+
+```dart
+// app_localizations_setup.dart
+import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+
+class LocalizationSetup {
+  // アプリで対応する言語のリスト
+  static const List<Locale> supportedLocales = [
+    Locale('en'), // 英語
+    Locale('ja'), // 日本語
+  ];
+
+  // 多言語対応に必要なデリゲート
+  static const List<LocalizationsDelegate<dynamic>> localizationsDelegates = [
+    AppLocalizations.delegate, // 自動生成される翻訳デリゲート
+    GlobalMaterialLocalizations.delegate,
+    GlobalWidgetsLocalizations.delegate,
+    GlobalCupertinoLocalizations.delegate,
+  ];
+
+  // 言語解決のためのコールバック
+  static Locale? localeResolutionCallback(
+      Locale? locale, Iterable<Locale> supportedLocales) {
+    if (locale == null) {
+      return supportedLocales.first;
+    }
+
+    // サポートされている言語かチェック
+    for (final supportedLocale in supportedLocales) {
+      if (supportedLocale.languageCode == locale.languageCode) {
+        return supportedLocale;
+      }
+    }
+
+    // サポートされていない言語の場合はデフォルト言語を返す
+    return supportedLocales.first;
+  }
+}
+```
+
+```dart
+// app.dart
+import 'package:flutter/material.dart';
+import 'core/localization/app_localizations_setup.dart';
+import 'core/router/app_router.dart';
+import 'core/theme/app_theme.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+
+class MyApp extends StatelessWidget {
+  const MyApp({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp.router(
+      title: 'My App',
+      theme: AppTheme.lightTheme,
+      darkTheme: AppTheme.darkTheme,
+      themeMode: ThemeMode.system,
+      
+      // 多言語対応の設定
+      localizationsDelegates: LocalizationSetup.localizationsDelegates,
+      supportedLocales: LocalizationSetup.supportedLocales,
+      localeResolutionCallback: LocalizationSetup.localeResolutionCallback,
+      
+      // go_routerを使用したルーティング
+      routerConfig: appRouter,
+    );
+  }
+}
+```
+
+### router
+
+アプリケーションのルーティング設定を管理します。go_routerパッケージを使用し、型安全なルーティングのためのbuilderを活用します。
+
+```dart
+// app_routes.dart
+// 型安全なルートパスの定義
+
+/// アプリケーションのルート定義
+class AppRoutes {
+  /// 認証関連
+  static const login = '/login';
+  static const register = '/register';
+  
+  /// TODOリスト
+  static const todos = '/todos';
+  static const todoCreate = '/todos/create';
+  
+  /// TODOの詳細（動的パラメータを含む）
+  static String todoDetail(String id) => '/todos/$id';
+}
+```
+
+```dart
+// app_router.dart
+import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import '../../ui/auth/page/login_page.dart';
+import '../../ui/auth/page/register_page.dart';
+import '../../ui/todo/page/todo_list_page.dart';
+import '../../ui/todo/page/todo_detail_page.dart';
+import '../../ui/todo/page/todo_create_page.dart';
+import '../../feature/todo/domain/value_object/todo_id.dart';
+import 'app_routes.dart';
+
+part 'app_router.g.dart'; // GoRouterGeneratorで生成されるファイル
+
+@TypedGoRoute<LoginRoute>(
+  path: AppRoutes.login,
+)
+class LoginRoute extends GoRouteData {
+  const LoginRoute();
+  
+  @override
+  Widget build(BuildContext context, GoRouterState state) {
+    return const LoginPage();
+  }
+}
+
+@TypedGoRoute<RegisterRoute>(
+  path: AppRoutes.register,
+)
+class RegisterRoute extends GoRouteData {
+  const RegisterRoute();
+  
+  @override
+  Widget build(BuildContext context, GoRouterState state) {
+    return const RegisterPage();
+  }
+}
+
+@TypedGoRoute<TodosRoute>(
+  path: AppRoutes.todos,
+  routes: [
+    TypedGoRoute<TodoCreateRoute>(
+      path: 'create',
+    ),
+    TypedGoRoute<TodoDetailRoute>(
+      path: ':id',
+    ),
+  ],
+)
+class TodosRoute extends GoRouteData {
+  const TodosRoute();
+  
+  @override
+  Widget build(BuildContext context, GoRouterState state) {
+    return const TodoListPage();
+  }
+}
+
+class TodoCreateRoute extends GoRouteData {
+  const TodoCreateRoute();
+  
+  @override
+  Widget build(BuildContext context, GoRouterState state) {
+    return const TodoCreatePage();
+  }
+}
+
+class TodoDetailRoute extends GoRouteData {
+  final String id;
+  
+  const TodoDetailRoute({required this.id});
+  
+  @override
+  Widget build(BuildContext context, GoRouterState state) {
+    return TodoDetailPage(todoId: TodoId(id));
+  }
+}
+
+// エラーページのルート
+class NotFoundRoute extends GoRouteData {
+  const NotFoundRoute();
+  
+  @override
+  Widget build(BuildContext context, GoRouterState state) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('ページが見つかりません')),
+      body: Center(
+        child: Text('ページが見つかりません: ${state.uri.path}'),
+      ),
+    );
+  }
+}
+
+// アプリのルーター設定
+final appRouter = GoRouter(
+  initialLocation: AppRoutes.login,
+  routes: $appRoutes, // GoRouterGeneratorで生成されるルート
+  errorBuilder: (context, state) => const NotFoundRoute().build(context, state),
+);
+```
+
+### theme
+
+アプリケーションのテーマ設定を定義します。```
+
+### util
+
+アプリケーション全体で使用される汎用的なユーティリティ関数やクラスを定義します。
+
+```dart
+// logger.dart
+import 'package:logger/logger.dart';
+
+class AppLogger {
+  static final Logger _logger = Logger(
+    printer: PrettyPrinter(
+      methodCount: 0,
+      errorMethodCount: 8,
+      lineLength: 120,
+      colors: true,
+      printEmojis: true,
+      printTime: true,
+    ),
+  );
+
+  static void verbose(dynamic message, [dynamic error, StackTrace? stackTrace]) {
+    _logger.v(message, error, stackTrace);
+  }
+
+  static void debug(dynamic message, [dynamic error, StackTrace? stackTrace]) {
+    _logger.d(message, error, stackTrace);
+  }
+
+  static void info(dynamic message, [dynamic error, StackTrace? stackTrace]) {
+    _logger.i(message, error, stackTrace);
+  }
+
+  static void warning(dynamic message, [dynamic error, StackTrace? stackTrace]) {
+    _logger.w(message, error, stackTrace);
+  }
+
+  static void error(dynamic message, [dynamic error, StackTrace? stackTrace]) {
+    _logger.e(message, error, stackTrace);
+  }
+
+  static void wtf(dynamic message, [dynamic error, StackTrace? stackTrace]) {
+    _logger.wtf(message, error, stackTrace);
+  }
+}
+```
+
+```dart
+// result.dart
+import '../exception/app_exception.dart';
+
+class Result<T> {
+  final T? _value;
+  final AppException? _error;
+  
+  const Result.success(T value)
+      : _value = value,
+        _error = null;
+  
+  const Result.failure(AppException error)
+      : _value = null,
+        _error = error;
+  
+  bool get isSuccess => _error == null;
+  bool get isFailure => _error != null;
+  
+  T get value => _value!;
+  AppException get error => _error!;
+  
+  void when({
+    required Function(T) success,
+    required Function(AppException) failure,
+  }) {
+    if (isSuccess) {
+      success(_value!);
+    } else {
+      failure(_error!);
+    }
+  }
+  
+  R fold<R>({
+    required R Function(T) success,
+    required R Function(AppException) failure,
+  }) {
+    if (isSuccess) {
+      return success(_value!);
+    } else {
+      return failure(_error!);
+    }
+  }
+}
+```
+
+## ドメイン特化の制限
+
+coreディレクトリは、アプリケーション全体の基盤となるコードを提供するため、特定のドメインロジックを含めないようにします。以下の点に注意してください：
+
+### ドメインロジック混入の防止
+
+1. **汎用性の確保**:
+   coreディレクトリのコンポーネントは、特定のビジネスルールやドメイン知識に依存せず、様々なユースケースで再利用できる汎用的な機能に限定します。
+
+2. **抽象化レベルの管理**:
+   coreディレクトリのクラスやインターフェースは、具体的な実装詳細からではなく、抽象的な概念から設計します。
+
+3. **境界の明確化**:
+   - `core/network` - ネットワーク通信の一般的な仕組み（OK）
+   - `core/todo` - TODO機能に特化した機能（NG）
+
+### アンチパターンの回避
+
+以下のようなケースは避けるべきアンチパターンです：
+
+1. **ドメイン固有の状態管理**:
+   ```dart
+   // 悪い例: coreディレクトリに特定のドメインロジックが混入
+   // core/state/todo_state.dart
+   class TodoState {
+     final List<Todo> todos;
+     final bool isLoading;
+     
+     TodoState({required this.todos, this.isLoading = false});
+     
+     // TODOの状態管理ロジック
+     TodoState addTodo(Todo todo) => TodoState(todos: [...todos, todo]);
+     TodoState completeTodo(String id) => // ... TODOに特化したロジック
+   }
+   ```
+
+2. **特定の画面やフローに依存するユーティリティ**:
+   ```dart
+   // 悪い例: 特定の機能に依存したユーティリティ
+   // core/util/todo_formatter.dart
+   class TodoFormatter {
+     static String formatDueDate(DateTime dueDate) {
+       // TODOの期限日付をフォーマットするロジック
+     }
+     
+     static Color getPriorityColor(TodoPriority priority) {
+       // TODOの優先度に応じた色を返すロジック
+     }
+   }
+   ```
+
+3. **ドメイン固有の定数**:
+   ```dart
+   // 悪い例: 特定ドメインに関する定数
+   // core/constant/todo_constants.dart
+   class TodoConstants {
+     static const int MAX_TITLE_LENGTH = 100;
+     static const int MAX_DESCRIPTION_LENGTH = 500;
+     static const List<String> PRIORITY_LEVELS = ['低', '中', '高'];
+   }
+   ```
+
+### 推奨プラクティス
+
+1. **機能別にパッケージ化**:
+   特定のドメインに関連するコードは、`feature/`ディレクトリ内の適切なモジュールに配置します。
+
+   ```
+   feature/
+     ├── todo/
+     │   ├── domain/
+     │   │   ├── entity/
+     │   │   │   └── todo.dart
+     │   │   └── value_object/
+     │   │       └── todo_priority.dart
+     │   ├── application/
+     │   │   └── todo_service.dart
+     │   └── data/
+     │       └── repository/
+     │           └── todo_repository_impl.dart
+   ```
+
+2. **共通ユーティリティの正しい抽象化**:
+   ドメイン知識に依存しないように、汎用的なユーティリティとして抽象化します。
+
+   ```dart
+   // 良い例: 汎用的な日付フォーマッター
+   // core/util/date_formatter.dart
+   class DateFormatter {
+     static String formatDate(DateTime date, {String format = 'yyyy/MM/dd'}) {
+       // 汎用的な日付フォーマットロジック
+     }
+     
+     static String timeAgo(DateTime dateTime) {
+       // 「〜前」のような相対時間を返す汎用ロジック
+     }
+   }
+   ```
+
+3. **インターフェースの分離**:
+   共通機能が特定ドメインに過度に依存しないように、インターフェースを適切に分割します。
+
+   ```dart
+   // 良い例: 汎用的なキャッシュインターフェース
+   // core/cache/cache_manager.dart
+   abstract class CacheManager {
+     Future<void> set(String key, dynamic value, {Duration? expiry});
+     Future<T?> get<T>(String key);
+     Future<void> remove(String key);
+     Future<void> clear();
+   }
+   
+   // 具体的な実装は各featureで行う
+   // feature/todo/data/cache/todo_cache_manager_impl.dart
+   ```
+
+## まとめ
+
+`core`ディレクトリは、アプリケーションのインフラストラクチャ的な役割を果たします。ここに配置されるコードは、特定の機能に依存せず、アプリケーション全体で再利用可能なコンポーネントとなります。これにより、アプリケーションの保守性、テスト容易性、スケーラビリティが向上します。
