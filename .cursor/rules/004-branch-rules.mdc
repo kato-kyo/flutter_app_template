@@ -22,13 +22,13 @@ main
 機能の最初のタスクを始める際に作成
 - develop ブランチから分岐
 - 命名規則: feature/{機能ID}-base
-- 例: feature/f001-base
+- 例: feature/f001-base (fは小文字)
 
 ### タスクブランチの作成
 各小タスクを開始する際に作成
 - 対応する feature/{機能ID}-base ブランチから分岐
 - 命名規則: feature/{機能ID}-{タスクID}-{short-summary}
-- 例: feature/f001-t004-login-ui
+- 例: feature/f001-t04-login-ui (fとtは小文字)
 
 ### コミットとマージのルール
 コミットルール
@@ -41,13 +41,11 @@ main
 
 ### マージ方法
 
-ユーザのレビュー完了後、タスクブランチを機能ベースブランチにスカッシュマージ
-スカッシュマージにより、タスクの複数コミットが1つのコミットにまとめられる
-
+ユーザのレビュー完了後、タスクブランチを機能ベースブランチにスカッシュマージする
 
 ### ワークフロー例
 
 - develop から feature/f001-base を作成
-- feature/f001-base から feature/f001-f004-login-ui を作成
-- feature/f001-t004-login-ui でタスクを実装し、細かくコミット
+- feature/f001-base から feature/f001-t01-login-ui を作成
+- feature/f001-t01-login-ui でタスクを実装し、細かくコミット
 - タスク完了後、feature/f001-base へのプルリクエストを作成

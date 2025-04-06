@@ -7,6 +7,107 @@
 - **対象ユーザー**: [ターゲットユーザー]
 - **コンセプト**: [アプリのコンセプト]
 
+## ドメイン駆動設計（DDD）
+
+### 境界づけられたコンテキスト（Bounded Context）
+
+アプリケーションの機能を意味のある境界で区切り、各コンテキスト内で一貫したモデルを維持します。
+
+#### コンテキスト一覧
+
+| コンテキスト名 | 説明 | 責任範囲 | 主要エンティティ |
+|------------|------|---------|--------------|
+| 認証コンテキスト | ユーザー認証と認可に関するドメイン | ログイン、登録、認証状態管理 | User, AuthToken |
+| [コンテキスト2] | [説明] | [責任範囲] | [エンティティ] |
+| [コンテキスト3] | [説明] | [責任範囲] | [エンティティ] |
+
+#### コンテキストマップ
+
+以下は各境界づけられたコンテキスト間の関係性を表します：
+
+```mermaid
+graph TD
+    A[認証コンテキスト] -->|ユーザー情報提供| B[コンテキスト2]
+    B -->|データ連携| C[コンテキスト3]
+    A -->|認可確認| C
+    
+    classDef core fill:#f96,stroke:#333,stroke-width:2px;
+    classDef generic fill:#bbf,stroke:#333,stroke-width:1px;
+    classDef supporting fill:#dfb,stroke:#333,stroke-width:1px;
+    
+    class A core;
+    class B generic;
+    class C supporting;
+```
+
+### ドメインモデル概要
+
+#### 主要なドメインオブジェクト
+
+##### エンティティ（ID による識別が重要なオブジェクト）
+- **User**: ユーザー情報を表すエンティティ
+- **[エンティティ2]**: [説明]
+
+##### 値オブジェクト（属性の値で表現されるオブジェクト）
+- **Email**: メールアドレスを表す値オブジェクト
+- **Password**: パスワードとその検証ロジックをカプセル化
+- **[値オブジェクト3]**: [説明]
+
+##### 集約（Aggregate）とルート
+以下の集約は関連するオブジェクトをまとめ、一貫性を維持します：
+
+```mermaid
+classDiagram
+    class UserAggregate {
+        <<Aggregate Root>>
+        +UserId id
+        +Email email
+        +create()
+        +updateProfile()
+    }
+    
+    class Profile {
+        +Name name
+        +Avatar avatar
+        +updateName()
+    }
+    
+    class AuthSettings {
+        +boolean twoFactorEnabled
+        +enableTwoFactor()
+        +disableTwoFactor()
+    }
+    
+    UserAggregate "1" *-- "1" Profile
+    UserAggregate "1" *-- "1" AuthSettings
+```
+
+### 戦略的設計の決定事項
+
+#### コンテキスト間の統合パターン
+
+| コンテキスト間 | 統合パターン | 説明 |
+|--------------|------------|------|
+| 認証 ↔ [コンテキスト2] | 共有カーネル | 共通のドメインモデル部分を共有 |
+| [コンテキスト2] ↔ [コンテキスト3] | カスタマー/サプライヤー | [コンテキスト2]が[コンテキスト3]のサービスを利用 |
+| 認証 ↔ [コンテキスト3] | アンチコラプションレイヤー | 変換レイヤーを介して連携 |
+
+#### アンチコラプションレイヤー
+
+以下のコンテキスト間では、外部システムや変更の影響を最小限に抑えるためのアンチコラプションレイヤーを設置します：
+
+```mermaid
+graph TD
+    A[コンテキストA] -->|データ| B[アンチコラプションレイヤー]
+    B -->|変換されたデータ| C[コンテキストB]
+    
+    style B fill:#ffd,stroke:#333,stroke-width:2px
+```
+
+- **設置場所**: [コンテキスト名]と[外部システム/他コンテキスト]の間
+- **主な役割**: [詳細説明]
+- **実装方針**: [アダプター、ファサード等の具体的な実装パターン]
+
 ## アーキテクチャ設計
 
 ### 全体アーキテクチャ
@@ -76,35 +177,59 @@
 
 ## データモデル設計
 
-### エンティティ設計
+### ドメイン層のエンティティと値オブジェクト
 
-#### エンティティ1: [名前]
+#### エンティティ
 
 ```dart
-class [EntityName] {
-  final String id;
-  final String [property1];
-  final int [property2];
+class User {
+  final UserId id;
+  final Email email;
+  final Profile profile;
   
-  [EntityName]({
+  User({
     required this.id,
-    required this.[property1],
-    required this.[property2],
+    required this.email,
+    required this.profile,
   });
+  
+  // ドメインロジックを含むメソッド
+  bool canAccessFeature(Feature feature) {
+    // ビジネスルールに基づいた判定ロジック
+    return true;
+  }
 }
 ```
 
-#### エンティティ2: [名前]
+#### 値オブジェクト
 
 ```dart
-class [EntityName] {
-  final String id;
-  final String [property1];
+class Email {
+  final String value;
   
-  [EntityName]({
-    required this.id,
-    required this.[property1],
-  });
+  Email._({required this.value});
+  
+  // ファクトリコンストラクタでバリデーション
+  factory Email.create(String email) {
+    if (!_isValid(email)) {
+      throw InvalidEmailException('無効なメールアドレス形式です');
+    }
+    return Email._(value: email);
+  }
+  
+  // ドメインのバリデーションルール
+  static bool _isValid(String email) {
+    // メールアドレスの検証ロジック
+    return RegExp(r'^[^@]+@[^@]+\.[^@]+$').hasMatch(email);
+  }
+  
+  @override
+  bool operator ==(Object other) => 
+    identical(this, other) || 
+    other is Email && value == other.value;
+    
+  @override
+  int get hashCode => value.hashCode;
 }
 ```
 

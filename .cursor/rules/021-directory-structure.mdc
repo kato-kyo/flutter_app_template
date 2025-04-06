@@ -127,6 +127,9 @@ test/
 integration_test/
   |
   |- app_flow_test.dart
+docs/
+  |
+  |- <documents>
 ```
 
 

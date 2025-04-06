@@ -40,6 +40,230 @@
 * ユーザーストーリー1
 * ユーザーストーリー2
 
+## ドメイン設計（DDD）
+
+### ドメインモデル詳細設計
+
+#### エンティティ
+<!-- 
+固有のIDを持ち、ライフサイクルを通じて同一性が維持されるオブジェクト。
+エンティティには状態変更のメソッドを含め、整合性を保つためのルールを実装する。
+-->
+
+```dart
+class [EntityName] {
+  final [EntityId] id;
+  final [ValueObject1] valueObject1;
+  [ValueObject2] valueObject2; // 変更可能な値オブジェクト
+  
+  [EntityName]({
+    required this.id,
+    required this.valueObject1,
+    required this.valueObject2,
+  });
+  
+  // ドメインロジックを表現するメソッド
+  Result<void> updateSomething([Parameter] param) {
+    // ビジネスルールのチェック
+    if (!_someBusinessRule(param)) {
+      return Result.failure(DomainError('ビジネスルール違反の理由'));
+    }
+    
+    // 状態変更
+    this.valueObject2 = [ValueObject2].create(param);
+    return Result.success(null);
+  }
+  
+  // ビジネスルールを表現するプライベートメソッド
+  bool _someBusinessRule([Parameter] param) {
+    // ドメインの制約チェック
+    return true;
+  }
+}
+```
+
+#### 値オブジェクト
+<!-- 
+属性のみで識別され、同じ属性を持つ値オブジェクトは等価とみなされる。
+不変（イミュータブル）であり、自己検証の責任を持つ。
+-->
+
+```dart
+class [ValueObjectName] {
+  final [Type] value;
+  
+  const [ValueObjectName]._(this.value);
+  
+  // ファクトリコンストラクタでバリデーション
+  static Result<[ValueObjectName]> create([Type] input) {
+    // ドメインのバリデーションルール
+    if (!_isValid(input)) {
+      return Result.failure(DomainError('検証エラーの理由'));
+    }
+    
+    return Result.success([ValueObjectName]._(input));
+  }
+  
+  // ドメインのバリデーションルール
+  static bool _isValid([Type] input) {
+    // 検証ロジック
+    return true;
+  }
+  
+  // 値オブジェクトのビジネス操作
+  [ValueObjectName] someOperation() {
+    // 新しい値オブジェクトを返す（イミュータブル）
+    return [ValueObjectName]._(/* 計算された新しい値 */);
+  }
+  
+  // 等価性の実装
+  @override
+  bool operator ==(Object other) => 
+    identical(this, other) || 
+    other is [ValueObjectName] && value == other.value;
+    
+  @override
+  int get hashCode => value.hashCode;
+}
+```
+
+#### 集約と整合性ルール
+<!-- 
+一貫性を保つべきエンティティと値オブジェクトのクラスター。
+集約ルートを通じてのみアクセスされ、トランザクションの単位となる。
+-->
+
+```mermaid
+classDiagram
+    class [AggregateRoot] {
+        <<Aggregate Root>>
+        +[RootId] id
+        +[ValueObject] valueObject
+        +List~[ChildEntity]~ children
+        +createChild()
+        +removeChild([ChildId])
+        +validateConsistency()
+    }
+    
+    class [ChildEntity] {
+        +[ChildId] id
+        +[ValueObject] valueObject
+        +updateValue()
+    }
+    
+    [AggregateRoot] "1" *-- "*" [ChildEntity]
+```
+
+**整合性ルール**:
+- [ルール1]
+- [ルール2]
+
+#### ドメインイベント
+<!-- 
+ドメイン内の重要な出来事を表すオブジェクト。
+副作用の分離や、システム間の疎結合を実現するために使用。
+-->
+
+```dart
+class [DomainEvent] {
+  final DateTime occurredOn;
+  final [EntityId] entityId;
+  final [AdditionalData] data;
+  
+  const [DomainEvent]({
+    required this.occurredOn,
+    required this.entityId,
+    required this.data,
+  });
+}
+```
+
+**発行されるドメインイベント**:
+- **[イベント1]**: [発生条件と目的]
+- **[イベント2]**: [発生条件と目的]
+
+### リポジトリ設計
+<!-- 
+集約の永続化と再構築を担当するインターフェース。
+実装の詳細を隠蔽し、ドメインオブジェクトのコレクションのように振る舞う。
+-->
+
+```dart
+abstract class [AggregateRoot]Repository {
+  // 集約を取得
+  Future<Result<[AggregateRoot]>> getById([RootId] id);
+  
+  // 検索条件による集約の取得
+  Future<Result<List<[AggregateRoot]>>> findBy([SearchCriteria] criteria);
+  
+  // 集約の保存（作成/更新）
+  Future<Result<void>> save([AggregateRoot] aggregate);
+  
+  // 集約の削除
+  Future<Result<void>> remove([RootId] id);
+}
+```
+
+**トランザクション境界**:
+- このリポジトリでは、[AggregateRoot]集約全体が単一のトランザクションで保存/読み込みされます
+- [複数集約間のトランザクションポリシーがあれば記載]
+
+### ドメインサービス設計
+<!-- 
+特定のエンティティに自然に属さない操作や、
+複数の集約にまたがるドメインロジックを実装するサービス。
+-->
+
+```dart
+class [DomainService] {
+  final [Repository1] repository1;
+  final [Repository2] repository2;
+  
+  [DomainService](this.repository1, this.repository2);
+  
+  // ドメインの操作
+  Future<Result<[Output]>> performOperation([Input] input) async {
+    // ドメインロジック（複数のエンティティや集約を操作）
+    final aggregate1Result = await repository1.getById(input.id1);
+    if (aggregate1Result.isFailure) {
+      return Result.failure(aggregate1Result.error);
+    }
+    
+    final aggregate2Result = await repository2.getById(input.id2);
+    if (aggregate2Result.isFailure) {
+      return Result.failure(aggregate2Result.error);
+    }
+    
+    final aggregate1 = aggregate1Result.value;
+    final aggregate2 = aggregate2Result.value;
+    
+    // ドメインルールの適用
+    if (!_someComplexBusinessRule(aggregate1, aggregate2)) {
+      return Result.failure(DomainError('ルール違反の理由'));
+    }
+    
+    // 操作の実行
+    final result = _executeOperation(aggregate1, aggregate2);
+    
+    // 変更の永続化
+    await repository1.save(aggregate1);
+    await repository2.save(aggregate2);
+    
+    return Result.success(result);
+  }
+  
+  bool _someComplexBusinessRule([AggregateRoot1] a1, [AggregateRoot2] a2) {
+    // 複雑なドメインルールのチェック
+    return true;
+  }
+  
+  [Output] _executeOperation([AggregateRoot1] a1, [AggregateRoot2] a2) {
+    // 操作の実行ロジック
+    return [Output]();
+  }
+}
+```
+
 ## 詳細設計
 
 ### システム構成図
@@ -174,15 +398,10 @@ graph TD
 * 考慮事項1
 * 考慮事項2
 
-## テスト計画
+## 結合テスト計画
 <!-- 
-この機能をどのようにテストするかの計画。
-単体テスト、結合テスト、エンドツーエンドテストなど。
+結合テスト、E2Eテストをどのように実施するかの計画。
 -->
-
-### 単体テスト
-* テストケース1
-* テストケース2
 
 ### 結合テスト
 * テストケース1
@@ -194,20 +413,42 @@ graph TD
 マイルストーンや依存関係があれば記載する。
 -->
 
-1. ステップ1: データモデルの実装
-2. ステップ2: APIエンドポイントの実装
-3. ステップ3: フロントエンドの実装
-4. ステップ4: テストとバグ修正
+機能実装タスクは、下記の順序で行う。それぞれをプルリクエストの単位とする
 
-## 運用計画
-<!-- 
-デプロイ方法、監視方法、アラート設定など。
-運用上の考慮事項を記載する。
--->
+T01: feature-design-doc (機能仕様書) の作成
+T02: ui層の実装
+T03: model層の実装
+T04: data層の実装
+T05: application層の実装 (必要な場合)
+T06: 結合テストの作成・実行
 
-* デプロイ計画
-* モニタリング計画
-* ロールバック計画
+T02 から T05 の 実装は、下記のステップで進る。
+それぞれのステップは、コミットの単位とする。
+
+S01: 実装
+S02: リファクタリング (lintの修正を含む)
+S03: ユニットテストの作成・実行
+
+## application層の要否判断
+* [ ] 必要 
+* [ ] 不要
+
+**判断の根拠**
+
+---
+参考: https://docs.flutter.dev/app-architecture/guide#optional-domain-layer
+
+基準:
+アプリが成長し、機能が追加されていくにつれて、state(view_model)に過度に複雑なロジックを追加する場合は、抽象化が必要になる場合があります。
+これらのクラスは、アプリケーションまたはユースケースと呼ばれることがよくあります。
+
+アプリケーション層は、UI層とデータ層間のインタラクションをよりシンプルかつ再利用性の高いものにする役割を担います。
+リポジトリからデータを取得し、UI層に適した形式に変換します。
+
+アプリケーション層は主に、uiのstate内に存在するビジネス ロジックをカプセル化するために使用され、次の 1 つ以上の条件を満たします。
+* 複数のリポジトリからのデータのマージが必要
+* 非常に複雑です
+* ロジックは異なるstateで再利用されます
 
 ## オープンクエスチョンと課題
 <!-- 
