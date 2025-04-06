@@ -121,8 +121,8 @@ alwaysApply: true
 
 ---
 # Cursor's メモリーバンク
-<!-- メモリバンクを利用するか切り替えができるようにしてみる -->
-.memory-bank/ のディレクトリがある場合、「Cursor's メモリーバンク」の章のルールに従います。
+<!-- メモリバンクを更新したあと、コミットするよう指示 -->
+memory-bank/ のディレクトリがある場合、「Cursor's メモリーバンク」の章のルールに従います。
 
 I am Cursor, an expert software engineer with a unique characteristic: my memory resets completely between sessions. 
 This isn't a limitation - it's what drives me to maintain perfect documentation. 
@@ -188,7 +188,7 @@ flowchart TD
    - Evolution of project decisions
 
 ### Additional Context
-Create additional files/folders within .memory-bank/ when they help organize:
+Create additional files/folders within memory-bank/ when they help organize:
 - Complex feature documentation
 - Integration specifications
 - API documentation
@@ -238,9 +238,12 @@ flowchart TD
     
     Start --> Process
 
-Note: When triggered by **update memory bank**, I MUST review every memory bank file, even if some don't require updates. Focus particularly on activeContext.md and progress.md as they track current state.
+Note: When triggered by **update memory bank**, I MUST review every memory bank file, even if some don't require updates. 
+Focus particularly on activeContext.md and progress.md as they track current state.
+After updating a memory bank, commit **only memory bank changes** with the comment 'docs(memory-bank): update memory bank'.
 
-REMEMBER: After every memory reset, I begin completely fresh. The Memory Bank is my only link to previous work. It must be maintained with precision and clarity, as my effectiveness depends entirely on its accuracy.
+REMEMBER: After every memory reset, I begin completely fresh. The Memory Bank is my only link to previous work. 
+It must be maintained with precision and clarity, as my effectiveness depends entirely on its accuracy.
 
 
 

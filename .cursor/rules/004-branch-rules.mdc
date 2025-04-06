@@ -1,0 +1,53 @@
+---
+description: Apply this rule when developing.
+globs: 
+alwaysApply: false
+---
+このファイルを参照した際、 `ファイル名`を参照しました と報告してください。
+
+
+以下は、アプリケーション開発におけるブランチ管理のルールです。
+
+## ブランチ構造
+```
+main
+└── develop
+    └── feature/{機能ID}-base
+        └── feature/{機能ID}-{タスクID}-{short-summary}
+```
+
+## ブランチ作成ルール
+
+### 機能ベースブランチの作成
+機能の最初のタスクを始める際に作成
+- develop ブランチから分岐
+- 命名規則: feature/{機能ID}-base
+- 例: feature/f001-base
+
+### タスクブランチの作成
+各小タスクを開始する際に作成
+- 対応する feature/{機能ID}-base ブランチから分岐
+- 命名規則: feature/{機能ID}-{タスクID}-{short-summary}
+- 例: feature/f001-t004-login-ui
+
+### コミットとマージのルール
+コミットルール
+
+- タスクブランチでは、**細かな頻度で**ルールに則りコミット作業を行う
+
+### プルリクエスト
+
+小タスクが完了したら、対応する feature/{機能ID}-base ブランチに向けてプルリクエストを作成
+
+### マージ方法
+
+ユーザのレビュー完了後、タスクブランチを機能ベースブランチにスカッシュマージ
+スカッシュマージにより、タスクの複数コミットが1つのコミットにまとめられる
+
+
+### ワークフロー例
+
+- develop から feature/f001-base を作成
+- feature/f001-base から feature/f001-f004-login-ui を作成
+- feature/f001-t004-login-ui でタスクを実装し、細かくコミット
+- タスク完了後、feature/f001-base へのプルリクエストを作成
