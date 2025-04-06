@@ -1,3 +1,23 @@
 {
-  "dart.flutterSdkPath": ".fvm/versions/3.29.2"
+  "dart.flutterSdkPath": ".fvm/versions/3.29.2",
+
+  // 保存時の自動フォーマット
+  "editor.formatOnSave": true,
+  "dart.formatOnSave": true,
+
+  // Linter ルールを "問題" パネルに表示
+  "dart.showLintsInProblems": true,
+
+  // ウィジェットの構造に合わせたインデントガイドを表示
+  "dart.previewFlutterUiGuides": true,
+
+  // 括弧のペアを色分け表示
+  "editor.bracketPairColorization.enabled": true,
+
+  // ワークスペース推奨拡張機能の通知を有効化
+  "extensions.ignoreRecommendations": false,
+  "extensions.showRecommendationsOnlyOnDemand": false,
+
+  // (任意) 保存時に自動でテストを実行しない
+  "dart.runTestsOnSave": false
 }
