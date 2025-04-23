@@ -38,22 +38,32 @@ class TaskFormState {
   ///
   /// 現在の状態をベースに、変更したいプロパティのみを指定して新しい状態を生成する。
   /// 指定しなかったプロパティは現在の値がそのまま使用される。
+  /// nullableなプロパティの場合、引数がnullの場合は実際にnullが設定される。
   TaskFormState copyWith({
     String? name,
     String? repeatType,
-    String? categoryId,
-    TimeOfDay? reminderTime,
+    Object? categoryId = _sentinelValue,
+    Object? reminderTime = _sentinelValue,
     bool? isSubmitting,
-    String? errorMessage,
+    Object? errorMessage = _sentinelValue,
   }) {
     return TaskFormState(
       name: name ?? this.name,
       repeatType: repeatType ?? this.repeatType,
-      categoryId: categoryId ?? this.categoryId,
-      reminderTime: reminderTime ?? this.reminderTime,
+      categoryId: _getValueOrNull(categoryId, this.categoryId),
+      reminderTime: _getValueOrNull(reminderTime, this.reminderTime),
       isSubmitting: isSubmitting ?? this.isSubmitting,
-      errorMessage: errorMessage ?? this.errorMessage,
+      errorMessage: _getValueOrNull(errorMessage, this.errorMessage),
     );
+  }
+
+  // センチネル値（値が渡されたかどうかを判定するための特別な値）
+  static const _sentinelValue = Object();
+
+  // 値が渡された場合はその値を、渡されなかった場合は元の値を返す
+  // センチネル値でない場合、Objectは実際の値型かnullなのでキャストして返す
+  static T? _getValueOrNull<T>(Object? value, T? defaultValue) {
+    return value == _sentinelValue ? defaultValue : value as T?;
   }
 
   /// カテゴリIDをクリア
