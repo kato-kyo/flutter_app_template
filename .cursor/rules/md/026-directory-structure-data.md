@@ -19,18 +19,18 @@
 例
 ```
 feature/
-  |- todo/  # feature_name
-  |  |- data
-  |  |  |- datasource/
-  |  |  |  |- todo_datasource.dart (optional, interface)
-  |  |  |  |- local/
-  |  |  |  |  |- todo_local_datasource.dart
-  |  |  |  |- remote/
-  |  |  |  |  |- todo_remote_datasource.dart
-  |  |  |- repository/
-  |  |  |  |- todo_repository_impl.dart
-  |  |  |- dto/
-  |  |  |  |- todo_dto.dart
+├── todo/  # feature_name
+│   └── data
+│       ├── datasource/
+│       │   ├── todo_datasource.dart (optional, interface)
+│       │   ├── local/
+│       │   │   └── todo_local_datasource.dart
+│       │   └── remote/
+│       │       └── todo_remote_datasource.dart
+│       ├── repository/
+│       │   └── todo_repository_impl.dart
+│       └── dto/
+│           └── todo_dto.dart
 ```
 
 
@@ -40,9 +40,9 @@ feature/
 
 ```
 data/
-  |- repository/
-     |- auth_repository_impl.dart  // 例：認証リポジトリの実装
-     |- todo_repository_impl.dart  // 例：TODOリポジトリの実装
+├── repository/
+│   ├── auth_repository_impl.dart  // 例：認証リポジトリの実装
+│   └── todo_repository_impl.dart  // 例：TODOリポジトリの実装
 ```
 
 - **役割**: ドメイン層で定義されたリポジトリインターフェース（`domain/repository/`）の実装を提供します
@@ -56,9 +56,9 @@ data/
 
 ```
 data/
-  |- dto/
-     |- user_dto.dart  // 例：ユーザーDTOの定義
-     |- todo_dto.dart  // 例：TODOアイテムのDTO
+└── dto/
+    ├── user_dto.dart  // 例：ユーザーDTOの定義
+    └── todo_dto.dart  // 例：TODOアイテムのDTO
 ```
 
 - **役割**: データの変換を担当するオブジェクト
@@ -72,12 +72,12 @@ data/
 
 ```
 data/
-  |- datasource/
-  |  |- auth_data_source.dart # option (interface)
-  |  |- remote/
-  |  |  |- auth_api.dart
-  |  |- local/
-  |  |  |- auth_local_store.dart
+└── datasource/
+    ├── auth_data_source.dart # option (interface)
+    ├── remote/
+    │   └── auth_api.dart
+    └── local/
+        └── auth_local_store.dart
 ```
 
 - **役割**: 特定のデータソースとの通信を抽象化

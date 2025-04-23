@@ -9,10 +9,10 @@
 
 ```
 ui/
- |- [page_group_name]/     # 例: auth, todo など
- |  |- page/            # 画面を表すウィジェット
- |  |- state/           # UI状態管理（Riverpod）
- |  |- widget/          # 再利用可能なUIコンポーネント
+├── [page_group_name]/     # 例: auth, todo など
+│   ├── page/            # 画面を表すウィジェット
+│   ├── state/           # UI状態管理（Riverpod）
+│   └── widget/          # 再利用可能なUIコンポーネント
 ```
 
 ## 各サブディレクトリの役割

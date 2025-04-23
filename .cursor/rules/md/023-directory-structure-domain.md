@@ -9,16 +9,18 @@
 
 例:
 ```
+```
 feature/
-|- todo/  # feature_name
-|  |- domain/
-|  |  |- entity/
-|  |  |  |- todo.dart
-|  |  |- repository/
-|  |  |  |- todo_repository.dart
-|  |  |- value_object/
-|  |  |  |- todo_id.dart
-|  |  |  |- todo_status.dart
+├── todo/  # feature_name
+│   └── domain/
+│       ├── entity/
+│       │   └── todo.dart
+│       ├── repository/
+│       │   └── todo_repository.dart
+│       └── value_object/
+│           ├── todo_id.dart
+│           └── todo_status.dart
+```
 ```
 ## Domain層の主要コンポーネント
 
