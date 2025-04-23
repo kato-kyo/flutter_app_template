@@ -10,9 +10,10 @@
 例:
 ```
 feature/
- |- auth/  # feature_name
- |  |- application/ 
- |  |  |- login_service.dart 
+├── auth/  # feature_name
+│   └── application/ 
+│       ├── login_service.dart 
+│       └── register_service.dart
 ```
 
 ## applicationレイヤーの概要
@@ -46,8 +47,8 @@ feature/
 
 ```
 feature/auth/application/
-  |- login_service.dart  // ログイン固有のユースケース
-  |- register_service.dart // 登録固有のユースケース
+├── login_service.dart  // ログイン固有のユースケース
+└── register_service.dart // 登録固有のユースケース
 ```
 
 `login_service.dart`の実装例：
@@ -81,7 +82,7 @@ class LoginService {
 
 ```
 feature/todo/application/
-  |- todo_service.dart  // TODOに関連する全てのユースケース
+└── todo_service.dart  // TODOに関連する全てのユースケース
 ```
 
 `todo_service.dart`の実装例：

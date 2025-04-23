@@ -9,14 +9,14 @@
 
 ```
 core/
-|- shared/
-|  |- state/
-|  |  |- error_view.dart
-|  |  |- ...
-|  |- widget/
-|  |  |- loading_indicator.dart
-|  |  |- error_view.dart
-|  |  |- ...
+├── shared/
+│   ├── state/
+│   │   ├── error_view.dart
+│   │   └── ...
+│   └── widget/
+│       ├── loading_indicator.dart
+│       ├── error_view.dart
+│       └── ...
 ```
 
 ## 各サブディレクトリの役割
