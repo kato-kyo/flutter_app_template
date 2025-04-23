@@ -19,12 +19,12 @@ alwaysApply: false
 
 ```
 core/
- ├── constant/       # アプリ全体で使用される定数
- ├── exception/      # 例外処理関連
- ├── localization/   # 多言語対応（flutter_localizationパッケージ使用）
- ├── router/         # ルーティング設定（go_routerパッケージ使用）
- ├── theme/          # テーマ設定
- └── util/           # ユーティリティ機能
+├── constant/       # アプリ全体で使用される定数
+├── exception/      # 例外処理関連
+├── localization/   # 多言語対応（flutter_localizationパッケージ使用）
+├── router/         # ルーティング設定（go_routerパッケージ使用）
+├── theme/          # テーマ設定
+└── util/           # ユーティリティ機能
 ```
 
 ## 外部パッケージ依存関係
