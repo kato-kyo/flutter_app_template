@@ -4,7 +4,6 @@ import 'package:flutter_app_template/src/feature/task/domain/entity/task.dart';
 import 'package:flutter_app_template/src/feature/task/domain/value_object/category_id.dart';
 import 'package:flutter_app_template/src/feature/task/domain/value_object/repeat_type.dart';
 import 'package:flutter_app_template/src/feature/task/domain/value_object/task_description.dart';
-import 'package:flutter_app_template/src/feature/task/domain/value_object/task_id.dart';
 import 'package:flutter_app_template/src/feature/task/domain/value_object/task_name.dart';
 import 'package:flutter_test/flutter_test.dart';
 
