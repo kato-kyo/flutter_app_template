@@ -8,19 +8,19 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 class TaskFormState {
   /// タスク名
   final String name;
-  
+
   /// 繰り返しタイプ ('daily'または'weekly')
   final String repeatType;
-  
+
   /// カテゴリID（オプション）
   final String? categoryId;
-  
+
   /// リマインダー時刻（オプション）
   final TimeOfDay? reminderTime;
-  
+
   /// 送信中かどうか
   final bool isSubmitting;
-  
+
   /// エラーメッセージ（エラーがある場合）
   final String? errorMessage;
 

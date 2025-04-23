@@ -17,7 +17,7 @@ void main() {
 
     // スキャフォールドが存在することを確認
     expect(find.byType(Scaffold), findsOneWidget);
-    
+
     // アプリバーが存在することを確認
     expect(find.byType(AppBar), findsOneWidget);
   });
