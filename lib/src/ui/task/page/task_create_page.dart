@@ -2,6 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../widget/task_form.dart';
 
+/// タスク登録画面のルート定数
+class TaskCreatePageRoute {
+  /// タスク作成画面のパス
+  static const path = '/task/create';
+
+  /// タスク作成画面の名前
+  static const name = 'taskCreate';
+}
+
 /// タスク登録画面
 ///
 /// ユーザーが新しいタスクを作成するための画面。
@@ -13,7 +22,20 @@ class TaskCreatePage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
-      appBar: _buildAppBar(context),
+      appBar: AppBar(
+        title: const Text('タスク登録'),
+        centerTitle: true,
+        elevation: 0,
+        backgroundColor: Theme.of(context).colorScheme.surface,
+        foregroundColor: Theme.of(context).colorScheme.onSurface,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.help_outline),
+            onPressed: () => _showHelpDialog(context),
+            tooltip: 'ヘルプ',
+          ),
+        ],
+      ),
       body: const SafeArea(
         child: Padding(
           padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
@@ -23,55 +45,34 @@ class TaskCreatePage extends ConsumerWidget {
     );
   }
 
-  /// アプリバーを構築
-  AppBar _buildAppBar(BuildContext context) {
-    return AppBar(
-      title: const Text('タスク登録'),
-      centerTitle: true,
-      elevation: 0,
-      backgroundColor: Theme.of(context).colorScheme.surface,
-      foregroundColor: Theme.of(context).colorScheme.onSurface,
-      actions: [
-        IconButton(
-          icon: const Icon(Icons.help_outline),
-          onPressed: () => _showHelpDialog(context),
-          tooltip: 'ヘルプ',
-        ),
-      ],
-    );
-  }
-
   /// ヘルプダイアログを表示
   void _showHelpDialog(BuildContext context) {
     showDialog(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: _buildDialogTitle(context),
+          title: const _DialogTitle(),
           content: SingleChildScrollView(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
-              children: [
-                _buildHelpItem(
-                  context,
-                  'タスク名',
-                  '毎日または毎週繰り返し行うタスクの名前を入力します。',
-                  Icons.edit,
+              children: const [
+                _HelpItem(
+                  title: 'タスク名',
+                  description: '毎日または毎週繰り返し行うタスクの名前を入力します。',
+                  icon: Icons.edit,
                 ),
-                const SizedBox(height: 12),
-                _buildHelpItem(
-                  context,
-                  '繰り返しタイプ',
-                  '「毎日」または「毎週」から選択します。毎週の場合は、登録した曜日に表示されます。',
-                  Icons.repeat,
+                SizedBox(height: 12),
+                _HelpItem(
+                  title: '繰り返しタイプ',
+                  description: '「毎日」または「毎週」から選択します。毎週の場合は、登録した曜日に表示されます。',
+                  icon: Icons.repeat,
                 ),
-                const SizedBox(height: 12),
-                _buildHelpItem(
-                  context,
-                  'リマインダー時刻',
-                  'タスクを実行する時刻を設定することで、その時刻に通知でお知らせします。',
-                  Icons.notifications,
+                SizedBox(height: 12),
+                _HelpItem(
+                  title: 'リマインダー時刻',
+                  description: 'タスクを実行する時刻を設定することで、その時刻に通知でお知らせします。',
+                  icon: Icons.notifications,
                 ),
               ],
             ),
@@ -86,9 +87,14 @@ class TaskCreatePage extends ConsumerWidget {
       },
     );
   }
+}
 
-  /// ダイアログのタイトル部分を構築
-  Widget _buildDialogTitle(BuildContext context) {
+/// ダイアログのタイトル部分を構築するウィジェット
+class _DialogTitle extends StatelessWidget {
+  const _DialogTitle();
+
+  @override
+  Widget build(BuildContext context) {
     return Row(
       children: [
         Icon(Icons.help_outline, color: Theme.of(context).colorScheme.primary),
@@ -97,14 +103,22 @@ class TaskCreatePage extends ConsumerWidget {
       ],
     );
   }
+}
 
-  /// ヘルプ項目のウィジェットを作成
-  Widget _buildHelpItem(
-    BuildContext context,
-    String title,
-    String description,
-    IconData icon,
-  ) {
+/// ヘルプ項目のウィジェット
+class _HelpItem extends StatelessWidget {
+  final String title;
+  final String description;
+  final IconData icon;
+
+  const _HelpItem({
+    required this.title,
+    required this.description,
+    required this.icon,
+  });
+
+  @override
+  Widget build(BuildContext context) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [

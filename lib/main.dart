@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive_flutter/hive_flutter.dart';
-import 'src/ui/task/page/task_create_page.dart';
+import 'src/core/router/app_router.dart';
 
 Future<void> main() async {
   // Flutterバインディングの初期化
@@ -16,12 +16,14 @@ Future<void> main() async {
   runApp(const ProviderScope(child: MainApp()));
 }
 
-class MainApp extends StatelessWidget {
+class MainApp extends ConsumerWidget {
   const MainApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
+  Widget build(BuildContext context, WidgetRef ref) {
+    final router = ref.watch(appRouterProvider);
+
+    return MaterialApp.router(
       title: 'Routine Manager',
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
@@ -38,7 +40,7 @@ class MainApp extends StatelessWidget {
         useMaterial3: true,
       ),
       themeMode: ThemeMode.system,
-      home: const TaskCreatePage(),
+      routerConfig: router,
     );
   }
 }

@@ -46,26 +46,124 @@ class _TaskFormState extends ConsumerState<TaskForm> {
       key: _formKey,
       child: ListView(
         children: [
-          _buildErrorMessage(state),
-          _buildTaskNameField(state),
+          if (state.errorMessage != null)
+            _ErrorMessage(errorMessage: state.errorMessage!),
+          _TaskNameField(
+            controller: _nameController,
+            onChanged: (value) {
+              ref
+                  .read(taskFormStateProvider.notifier)
+                  .update((state) => state.copyWith(name: value));
+            },
+          ),
           const SizedBox(height: 24),
-          _buildRepeatTypeField(state),
+          _RepeatTypeField(
+            value: state.repeatType,
+            items: _repeatTypes,
+            onChanged: (value) {
+              if (value != null) {
+                ref
+                    .read(taskFormStateProvider.notifier)
+                    .update((state) => state.copyWith(repeatType: value));
+              }
+            },
+          ),
           const SizedBox(height: 24),
-          _buildReminderTimeField(state),
+          _ReminderTimeField(
+            reminderTime: state.reminderTime,
+            onSelectTime: _selectTime,
+            onClearTime: () {
+              ref
+                  .read(taskFormStateProvider.notifier)
+                  .update((state) => state.clearReminderTime());
+            },
+          ),
           const SizedBox(height: 36),
-          _buildSaveButton(state),
+          _SaveButton(
+            isSubmitting: state.isSubmitting,
+            onPressed: state.isSubmitting ? null : _saveTask,
+          ),
           const SizedBox(height: 36),
         ],
       ),
     );
   }
 
-  /// エラーメッセージ表示部分（エラーがある場合のみ表示）
-  Widget _buildErrorMessage(TaskFormState state) {
-    if (state.errorMessage == null) {
-      return const SizedBox.shrink();
+  /// 時刻選択ダイアログを表示
+  Future<void> _selectTime() async {
+    final state = ref.read(taskFormStateProvider);
+    final initialTime = state.reminderTime ?? TimeOfDay.now();
+
+    final TimeOfDay? pickedTime = await showTimePicker(
+      context: context,
+      initialTime: initialTime,
+      builder: (BuildContext context, Widget? child) {
+        return MediaQuery(
+          data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: true),
+          child: child!,
+        );
+      },
+    );
+
+    if (pickedTime != null) {
+      ref
+          .read(taskFormStateProvider.notifier)
+          .update((state) => state.copyWith(reminderTime: pickedTime));
+    }
+  }
+
+  /// タスクを保存する処理
+  Future<void> _saveTask() async {
+    // バリデーションチェック
+    if (!_formKey.currentState!.validate()) {
+      return;
     }
 
+    // 送信中の状態に更新
+    ref
+        .read(taskFormStateProvider.notifier)
+        .update((state) => state.copyWith(isSubmitting: true));
+
+    try {
+      // TODO: 実際の保存処理をここに実装
+      // 仮の処理として1秒待機
+      await Future.delayed(const Duration(seconds: 1));
+
+      // 保存成功後の処理
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('タスクを登録しました')));
+      }
+    } catch (e) {
+      // エラー発生時はエラーメッセージを表示
+      ref
+          .read(taskFormStateProvider.notifier)
+          .update(
+            (state) => state.copyWith(
+              isSubmitting: false,
+              errorMessage: 'タスクの登録に失敗しました: ${e.toString()}',
+            ),
+          );
+    } finally {
+      // 最終的に送信中フラグをリセット
+      if (mounted) {
+        ref
+            .read(taskFormStateProvider.notifier)
+            .update((state) => state.copyWith(isSubmitting: false));
+      }
+    }
+  }
+}
+
+/// エラーメッセージ表示ウィジェット
+class _ErrorMessage extends StatelessWidget {
+  final String errorMessage;
+
+  const _ErrorMessage({required this.errorMessage});
+
+  @override
+  Widget build(BuildContext context) {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(12),
@@ -80,7 +178,7 @@ class _TaskFormState extends ConsumerState<TaskForm> {
           const SizedBox(width: 8),
           Expanded(
             child: Text(
-              state.errorMessage!,
+              errorMessage,
               style: TextStyle(color: Colors.red.shade700),
             ),
           ),
@@ -88,9 +186,17 @@ class _TaskFormState extends ConsumerState<TaskForm> {
       ),
     );
   }
+}
 
-  /// タスク名入力フィールド
-  Widget _buildTaskNameField(TaskFormState state) {
+/// タスク名入力フィールド
+class _TaskNameField extends StatelessWidget {
+  final TextEditingController controller;
+  final Function(String) onChanged;
+
+  const _TaskNameField({required this.controller, required this.onChanged});
+
+  @override
+  Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -100,17 +206,13 @@ class _TaskFormState extends ConsumerState<TaskForm> {
         ),
         const SizedBox(height: 8),
         TextFormField(
-          controller: _nameController,
+          controller: controller,
           decoration: const InputDecoration(
             hintText: '例: 朝のストレッチ',
             border: OutlineInputBorder(),
             contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
           ),
-          onChanged: (value) {
-            ref
-                .read(taskFormStateProvider.notifier)
-                .update((state) => state.copyWith(name: value));
-          },
+          onChanged: onChanged,
           validator: (value) {
             if (value == null || value.trim().isEmpty) {
               return 'タスク名を入力してください';
@@ -129,9 +231,22 @@ class _TaskFormState extends ConsumerState<TaskForm> {
       ],
     );
   }
+}
 
-  /// 繰り返しタイプ選択フィールド
-  Widget _buildRepeatTypeField(TaskFormState state) {
+/// 繰り返しタイプ選択フィールド
+class _RepeatTypeField extends StatelessWidget {
+  final String value;
+  final List<DropdownMenuItem<String>> items;
+  final Function(String?) onChanged;
+
+  const _RepeatTypeField({
+    required this.value,
+    required this.items,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -145,29 +260,34 @@ class _TaskFormState extends ConsumerState<TaskForm> {
             border: OutlineInputBorder(),
             contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
           ),
-          value: state.repeatType,
-          items: _repeatTypes,
-          onChanged: (value) {
-            if (value != null) {
-              ref
-                  .read(taskFormStateProvider.notifier)
-                  .update((state) => state.copyWith(repeatType: value));
-            }
-          },
+          value: value,
+          items: items,
+          onChanged: onChanged,
         ),
         const SizedBox(height: 4),
         Text(
-          state.repeatType == 'daily'
-              ? '毎日のタスクとして登録します'
-              : '毎週同じ曜日に繰り返すタスクとして登録します',
+          value == 'daily' ? '毎日のタスクとして登録します' : '毎週同じ曜日に繰り返すタスクとして登録します',
           style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
         ),
       ],
     );
   }
+}
 
-  /// リマインダー時刻選択フィールド
-  Widget _buildReminderTimeField(TaskFormState state) {
+/// リマインダー時刻選択フィールド
+class _ReminderTimeField extends StatelessWidget {
+  final TimeOfDay? reminderTime;
+  final VoidCallback onSelectTime;
+  final VoidCallback onClearTime;
+
+  const _ReminderTimeField({
+    required this.reminderTime,
+    required this.onSelectTime,
+    required this.onClearTime,
+  });
+
+  @override
+  Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -177,7 +297,7 @@ class _TaskFormState extends ConsumerState<TaskForm> {
         ),
         const SizedBox(height: 8),
         InkWell(
-          onTap: _selectTime,
+          onTap: onSelectTime,
           borderRadius: BorderRadius.circular(8),
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
@@ -191,19 +311,15 @@ class _TaskFormState extends ConsumerState<TaskForm> {
                 const SizedBox(width: 16),
                 Expanded(
                   child: Text(
-                    state.reminderTime != null
-                        ? '${state.reminderTime!.hour.toString().padLeft(2, '0')}:${state.reminderTime!.minute.toString().padLeft(2, '0')}'
+                    reminderTime != null
+                        ? '${reminderTime!.hour.toString().padLeft(2, '0')}:${reminderTime!.minute.toString().padLeft(2, '0')}'
                         : '時刻を設定する（任意）',
                   ),
                 ),
-                if (state.reminderTime != null)
+                if (reminderTime != null)
                   IconButton(
                     icon: const Icon(Icons.clear),
-                    onPressed: () {
-                      ref
-                          .read(taskFormStateProvider.notifier)
-                          .update((state) => state.clearReminderTime());
-                    },
+                    onPressed: onClearTime,
                   ),
               ],
             ),
@@ -217,20 +333,28 @@ class _TaskFormState extends ConsumerState<TaskForm> {
       ],
     );
   }
+}
 
-  /// 保存ボタン
-  Widget _buildSaveButton(TaskFormState state) {
+/// 保存ボタン
+class _SaveButton extends StatelessWidget {
+  final bool isSubmitting;
+  final VoidCallback? onPressed;
+
+  const _SaveButton({required this.isSubmitting, required this.onPressed});
+
+  @override
+  Widget build(BuildContext context) {
     return SizedBox(
       height: 50,
       child: ElevatedButton(
-        onPressed: state.isSubmitting ? null : _saveTask,
+        onPressed: onPressed,
         style: ElevatedButton.styleFrom(
           foregroundColor: Colors.white,
           backgroundColor: Theme.of(context).colorScheme.primary,
           disabledBackgroundColor: Colors.grey.shade300,
         ),
         child:
-            state.isSubmitting
+            isSubmitting
                 ? const SizedBox(
                   width: 24,
                   height: 24,
@@ -245,74 +369,5 @@ class _TaskFormState extends ConsumerState<TaskForm> {
                 ),
       ),
     );
-  }
-
-  /// 時刻選択ダイアログを表示
-  Future<void> _selectTime() async {
-    final state = ref.read(taskFormStateProvider);
-    final TimeOfDay? picked = await showTimePicker(
-      context: context,
-      initialTime: state.reminderTime ?? TimeOfDay.now(),
-      builder: (BuildContext context, Widget? child) {
-        return Theme(
-          data: ThemeData.light().copyWith(
-            colorScheme: ColorScheme.light(
-              primary: Theme.of(context).colorScheme.primary,
-            ),
-          ),
-          child: child!,
-        );
-      },
-    );
-    if (picked != null) {
-      ref
-          .read(taskFormStateProvider.notifier)
-          .update((state) => state.copyWith(reminderTime: picked));
-    }
-  }
-
-  /// タスクを保存
-  void _saveTask() {
-    if (_formKey.currentState?.validate() ?? false) {
-      // TODO: タスク保存処理の実装（domain/data層実装後）
-
-      // 一時的に送信中状態に設定
-      ref
-          .read(taskFormStateProvider.notifier)
-          .update((state) => state.copyWith(isSubmitting: true));
-
-      // 実際のAPI呼び出しは将来的に実装
-      _handleSaveOperation();
-    }
-  }
-
-  /// 保存操作の処理
-  ///
-  /// 非同期操作後にBuildContextを使用するため、BuildContextの検証を実施
-  Future<void> _handleSaveOperation() async {
-    await Future.delayed(const Duration(seconds: 1));
-
-    // マウント状態の確認
-    if (!mounted) return;
-
-    // 送信状態を解除
-    ref
-        .read(taskFormStateProvider.notifier)
-        .update(
-          (state) => state.copyWith(
-            isSubmitting: false,
-            // TODO: エラーハンドリングは将来的に実装
-          ),
-        );
-
-    // マウント状態を再確認してSnackBarを表示
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('まだ保存機能は実装されていません'),
-          duration: Duration(seconds: 2),
-        ),
-      );
-    }
   }
 }

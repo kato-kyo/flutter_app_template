@@ -7,7 +7,7 @@ import '../../ui/task/page/task_create_page.dart';
 /// アプリケーションのルート定義
 abstract class AppRoutes {
   /// タスク作成画面
-  static const taskCreate = '/task/create';
+  static const taskCreate = TaskCreatePageRoute.path;
 }
 
 /// アプリケーションのルーター構成を提供するProvider
@@ -18,8 +18,8 @@ final appRouterProvider = Provider<GoRouter>((ref) {
     routes: [
       // タスク作成画面
       GoRoute(
-        path: AppRoutes.taskCreate,
-        name: 'taskCreate',
+        path: TaskCreatePageRoute.path,
+        name: TaskCreatePageRoute.name,
         builder: (context, state) => const TaskCreatePage(),
       ),
     ],
