@@ -5,33 +5,39 @@ import '../widget/task_form.dart';
 /// タスク登録画面
 ///
 /// ユーザーが新しいタスクを作成するための画面。
-/// タスク名、繰り返しタイプ、カテゴリ（オプション）、リマインダー時刻（オプション）を入力できる。
+/// タスク名、繰り返しタイプ、リマインダー時刻（オプション）を入力できる。
 class TaskCreatePage extends ConsumerWidget {
+  /// コンストラクタ
   const TaskCreatePage({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('タスク登録'),
-        centerTitle: true,
-        elevation: 0,
-        backgroundColor: Theme.of(context).colorScheme.surface,
-        foregroundColor: Theme.of(context).colorScheme.onSurface,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.help_outline),
-            onPressed: () => _showHelpDialog(context),
-            tooltip: 'ヘルプ',
-          ),
-        ],
-      ),
-      body: SafeArea(
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-          child: const TaskForm(),
+      appBar: _buildAppBar(context),
+      body: const SafeArea(
+        child: Padding(
+          padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+          child: TaskForm(),
         ),
       ),
+    );
+  }
+
+  /// アプリバーを構築
+  AppBar _buildAppBar(BuildContext context) {
+    return AppBar(
+      title: const Text('タスク登録'),
+      centerTitle: true,
+      elevation: 0,
+      backgroundColor: Theme.of(context).colorScheme.surface,
+      foregroundColor: Theme.of(context).colorScheme.onSurface,
+      actions: [
+        IconButton(
+          icon: const Icon(Icons.help_outline),
+          onPressed: () => _showHelpDialog(context),
+          tooltip: 'ヘルプ',
+        ),
+      ],
     );
   }
 
@@ -41,16 +47,7 @@ class TaskCreatePage extends ConsumerWidget {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: Row(
-            children: [
-              Icon(
-                Icons.help_outline,
-                color: Theme.of(context).colorScheme.primary,
-              ),
-              const SizedBox(width: 8),
-              const Text('タスク登録について'),
-            ],
-          ),
+          title: _buildDialogTitle(context),
           content: SingleChildScrollView(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -87,6 +84,17 @@ class TaskCreatePage extends ConsumerWidget {
           ],
         );
       },
+    );
+  }
+
+  /// ダイアログのタイトル部分を構築
+  Widget _buildDialogTitle(BuildContext context) {
+    return Row(
+      children: [
+        Icon(Icons.help_outline, color: Theme.of(context).colorScheme.primary),
+        const SizedBox(width: 8),
+        const Text('タスク登録について'),
+      ],
     );
   }
 

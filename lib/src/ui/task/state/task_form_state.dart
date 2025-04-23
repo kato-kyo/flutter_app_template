@@ -2,14 +2,29 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// タスクフォームの状態
+///
+/// タスク登録・編集フォームの入力値や状態を管理するクラス。
+/// Immutableで設計されており、copyWithメソッドで新しいインスタンスを生成する。
 class TaskFormState {
+  /// タスク名
   final String name;
+  
+  /// 繰り返しタイプ ('daily'または'weekly')
   final String repeatType;
+  
+  /// カテゴリID（オプション）
   final String? categoryId;
+  
+  /// リマインダー時刻（オプション）
   final TimeOfDay? reminderTime;
+  
+  /// 送信中かどうか
   final bool isSubmitting;
+  
+  /// エラーメッセージ（エラーがある場合）
   final String? errorMessage;
 
+  /// コンストラクタ
   TaskFormState({
     this.name = '',
     this.repeatType = 'daily',
@@ -20,6 +35,9 @@ class TaskFormState {
   });
 
   /// 新しい状態を生成
+  ///
+  /// 現在の状態をベースに、変更したいプロパティのみを指定して新しい状態を生成する。
+  /// 指定しなかったプロパティは現在の値がそのまま使用される。
   TaskFormState copyWith({
     String? name,
     String? repeatType,
@@ -39,22 +57,30 @@ class TaskFormState {
   }
 
   /// カテゴリIDをクリア
+  ///
+  /// カテゴリの選択を解除する場合に使用する。
   TaskFormState clearCategoryId() {
     return copyWith(categoryId: null);
   }
 
   /// リマインダー時刻をクリア
+  ///
+  /// リマインダー時刻の設定を解除する場合に使用する。
   TaskFormState clearReminderTime() {
     return copyWith(reminderTime: null);
   }
 
   /// エラーメッセージをクリア
+  ///
+  /// エラー状態をリセットする場合に使用する。
   TaskFormState clearError() {
     return copyWith(errorMessage: null);
   }
 }
 
 /// タスクフォームの状態を管理するProvider
+///
+/// TaskFormStateのインスタンスを提供し、UIからの入力に応じて状態を更新する。
 final taskFormStateProvider = StateProvider<TaskFormState>((ref) {
   return TaskFormState();
 });
