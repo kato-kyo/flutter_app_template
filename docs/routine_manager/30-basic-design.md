@@ -4,355 +4,348 @@
 
 - **アプリ名**: Routine Manager
 - **プラットフォーム**: iOS/Android (Flutter)
-- **対象ユーザー**: 日々のタスクや習慣を効率的に管理したいと考えている社会人や学生
-- **コンセプト**: シンプルで直感的に使える日次・週次タスク管理アプリ。毎日のルーティン継続をサポートする。
+- **対象ユーザー**: 日々のタスクや習慣を効率的に管理したい社会人や学生
+- **コンセプト**: 日常のルーティン管理を、誰でも簡単に、楽しく継続できるようにするシンプルなモバイルアプリ
 
 ## アーキテクチャ設計
 
 ### 全体アーキテクチャ
 
-参照: [.cursor/rules/021-directory-structure.mdc](mdc:.cursor/rules/021-directory-structure.mdc)
-Flutterのレイヤードアーキテクチャを採用する。
-MVP段階ではData Layerは主にローカルストレージへのアクセスを担当する。
+Flutterのレイヤードアーキテクチャ (Clean Architecture に類似) を採用します。
+詳細は `.cursor/rules/021-directory-structure.mdc` を参照してください。
 
-- **UI Layer:** 画面表示、ユーザー入力の受付 (Flutter Widgets)
-- **Application Layer:** UseCase、状態管理 (Riverpod)
-- **Domain Layer:** エンティティ、Value Object、Repositoryインターフェース
-- **Data Layer:** Repository実装、ローカルデータソース (Hive/SharedPreferences)
+```mermaid
+graph TD
+    UI[UI Layer (Widgets)] --> App[Application Layer (Riverpod, UseCases)]
+    App --> Domain[Domain Layer (Entities, Repositories IF)]
+    App --> Data[Data Layer (Repositories Impl)]
+    Domain --> Data
+    Data --> LocalDB[Local Storage (Hive)]
+
+    subgraph Presentation
+        UI
+    end
+    subgraph Logic
+        App
+        Domain
+    end
+    subgraph Data
+        Data
+        LocalDB
+    end
+```
 
 ### 状態管理
 
 - **主要な状態管理手法**: Riverpod
-- **選定理由**: Flutterコミュニティで広く採用されており、依存性注入(DI)の仕組みも提供しているため。テスト容易性も高い。
+- **選定理由**: 宣言的な状態管理、依存性注入の容易さ、テスト容易性、Flutterコミュニティでの普及度。
 
 ### データフロー
 
-1. ユーザー操作 → UI Layer (Widget)
-2. UI Layer → Application Layer (Riverpod Provider / Notifier)
-3. Application Layer → Domain Layer (UseCase呼び出し、必要に応じて)
-4. Application Layer / Domain Layer → Data Layer (Repository呼び出し)
-5. Data Layer → ローカルデータソース (Hive/SharedPreferences)
+1. ユーザー操作 (例: タスク完了ボタンタップ) → UI Layer (Widget)
+2. UI Layer → Application Layer (Notifier/Provider経由でUseCase呼び出し)
+3. Application Layer → Domain Layer (必要に応じてEntity操作やRepository IF呼び出し)
+4. Domain Layer → Data Layer (Repository IF経由で実装呼び出し)
+5. Data Layer → Local Storage (Hive) へデータの永続化
+6. 状態変更が Application Layer (Notifier) に反映され、UI Layer が再描画される。
 
 ## 機能一覧設計
 
 以下はMVPで実装予定の機能一覧です。各機能に対する技術的な詳細や設計上の考慮点を記載しています。
 
-|機能ID|機能名|実装レイヤー|関連エンティティ|技術的考慮点|画面ID|
+|機能ID|機能名|実装レイヤー|関連エンティティ|技術的考慮点|画面ID(仮)|
 |---|---|---|---|---|---|
-|F010|タスク登録（毎日）|UI, App, Domain, Data|Task, Category|・繰り返しルールの保存<br>・入力バリデーション|S002|
-|F011|タスク登録（週次）|UI, App, Domain, Data|Task, Category|・繰り返し曜日(複数)の保存<br>・入力バリデーション|S002|
-|F012|タスク編集|UI, App, Domain, Data|Task, Category|・既存データの読み込み<br>・フォームの状態管理|S002|
-|F013|タスク削除|UI, App, Domain, Data|Task|・確認ダイアログ表示<br>・データ永続化|S001, S002|
-|F014|タスク一覧表示（リスト）|UI, App, Domain, Data|Task, Category|・今日/今週のタスク判定ロジック<br>・リストのソート順|S001|
-|F015|タスク完了切り替え|UI, App, Domain, Data|Task, TaskCompletion|・完了状態の永続化<br>・UIへの即時反映|S001|
-|F016|タスク分類設定|UI, App, Domain, Data|Category|・カテゴリ名の重複チェック<br>・カテゴリ削除時の関連タスク処理|S003|
-|F020|通知|当日朝リマインダー設定|UI, App, Data|Settings|・時刻設定UI<br>・設定値の永続化|S004|
-|F021|通知|当日朝リマインダー通知|App, Data|Task|・ローカル通知のスケジュール設定<br>・アプリプロセス外での実行考慮|N/A|
-|F040|アチーブメント判定|App, Domain, Data|TaskCompletion, Achievement, UserAchievement|・達成条件判定ロジック<br>・ユーザー行動のトラッキング|N/A|
-|F041|アチーブメント獲得通知|UI, App|UserAchievement|・通知UI（ポップアップ等）<br>・獲得済み判定|S001, S005|
-|F042|獲得バッジ一覧表示|UI, App, Domain, Data|Achievement, UserAchievement|・獲得バッジの取得<br>・グリッド表示|S005|
+|F001|タスク登録|UI, App, Domain, Data|Task, Category|・入力バリデーション<br>・繰り返し種別(日次/週次)の扱い<br>・リマインダー時刻設定<br>・Hiveへの保存|S002|
+|F002|タスク編集|UI, App, Domain, Data|Task, Category|・既存データの読み込み<br>・変更差分の保存|S002|
+|F003|タスク削除|UI, App, Domain, Data|Task|・削除確認UI<br>・Hiveからの削除|S001, S002|
+|F004|タスク一覧表示|UI, App, Domain, Data|Task, Category|・表示期間(当日/週等)の判定ロジック<br>・完了/未完了の視覚的区別<br>・Hiveからの効率的な読み込み|S001|
+|F005|タスク完了管理|UI, App, Domain, Data|Task|・完了状態の切り替えロジック<br>・完了日時の記録(Hive)|S001|
+|F006|カテゴリ作成|UI, App, Domain, Data|Category|・カテゴリ名の入力<br>・Hiveへの保存|S003|
+|F007|カテゴリ編集|UI, App, Domain, Data|Category|・既存データの読み込み<br>・変更差分の保存|S003|
+|F008|カテゴリ削除|UI, App, Domain, Data|Category|・削除確認UI<br>・関連タスクのカテゴリID更新処理|S003|
+|F010|ローカル通知実行|App, (Platform)|-|・`flutter_local_notifications`連携<br>・通知スケジューリング<br>・アプリ非起動時の動作|バックグラウンド|
+|F011|バッジ獲得|App, Domain, Data|Badge, UserProgress(仮)|・獲得条件判定ロジック<br>・バッジ獲得状態の保存(Hive)|バックグラウンド/App|
+|F012|獲得バッジ一覧|UI, App, Domain, Data|Badge|・獲得済みバッジの読み込み(Hive)<br>・グリッド等での表示|S004|
+|F013|ローカル保存|-|Task, Category, Badge|-|Hiveの初期化、Box管理|-|
 
 ## 画面設計
 
 ### 画面一覧
 
-|画面ID|画面名|主な機能|優先度|
+|画面ID(仮)|画面名|主な機能|優先度|
 |---|---|---|---|
-|S001|タスク一覧画面|今日/今週のタスク表示、タスク完了切り替え、タスク追加/編集画面への遷移|高|
-|S002|タスク登録/編集画面|タスク名、繰り返し設定、カテゴリ、通知設定の入力・編集|高|
-|S003|カテゴリ管理画面|カテゴリの作成・編集・削除|高|
-|S004|設定画面|リマインダー時刻の設定、その他設定項目、バッジ一覧への導線|高|
-|S005|獲得バッジ一覧画面|獲得したバッジの表示|中|
+|S001|タスク一覧画面 (ホーム)|タスク表示、完了操作、タスク追加/編集/削除への導線|高|
+|S002|タスク登録/編集画面|タスク情報の入力、保存|高|
+|S003|カテゴリ管理画面|カテゴリ一覧表示、作成、編集、削除|高|
+|S004|獲得バッジ一覧画面|獲得したバッジの表示|高|
+|S005|設定画面|通知時刻デフォルト設定など(検討)|中|
 
-### 画面遷移図
+### 画面遷移図 (簡易)
 
 ```mermaid
 graph TD
-    S001[タスク一覧] --> S002{タスク登録/編集}
-    S001 --> S004[設定]
+    S001[タスク一覧] --> S002[タスク登録/編集]
+    S001 --> S003[カテゴリ管理]
+    S001 --> S004[獲得バッジ一覧]
+    S001 --> S005[設定(仮)]
     S002 --> S001
-    S004 --> S003[カテゴリ管理]
-    S004 --> S005[獲得バッジ一覧]
-    S003 --> S004
-    S005 --> S004
+    S003 --> S001
+    S004 --> S001
+    S005 --> S001
 ```
 
 ### 主要画面レイアウト
 
 各画面のモックアップまたは主要コンポーネントの説明:
 
-#### S001: タスク一覧画面
+#### 画面1: タスク一覧画面 (S001)
 
 **主な構成要素**:
-- AppBar: アプリタイトル、設定画面への遷移アイコン
-- 日付表示/切り替え (今日/今週など)
-- タスクリスト: 未完了タスクをリスト表示 (タスク名、カテゴリ、チェックボックス)
-- 完了済みタスク表示エリア (折りたたみ可能 or 別セクション)
-- FAB (Floating Action Button): タスク登録画面への遷移
-- ボトムナビゲーション (将来的な拡張用、MVPでは非表示or設定のみも可)
+- AppBar (日付表示、設定等への導線)
+- タスクリスト (日付ごと or 週ごとのタスク表示、チェックボックス)
+- FAB (Floating Action Button) (タスク追加画面への遷移)
+- (オプション) カテゴリフィルター、バッジ獲得通知
 
 **ユーザーフロー**:
-1. アプリ起動時に表示される。
-2. リスト内のチェックボックスをタップしてタスクを完了にする。
-3. FABをタップしてタスク登録画面へ遷移する。
-4. AppBarのアイコンから設定画面へ遷移する。
+1. アプリ起動時に当日のタスクが表示される。
+2. スワイプやボタンで表示期間を変更できる (検討)。
+3. タスク横のチェックボックスで完了/未完了を切り替える。
+4. FABをタップするとタスク登録画面(S002)へ遷移する。
 
-#### S002: タスク登録/編集画面
+#### 画面2: タスク登録/編集画面 (S002)
 
 **主な構成要素**:
-- AppBar: タイトル (登録/編集)、保存ボタン、キャンセル/戻るボタン
-- タスク名入力フィールド
-- 繰り返し設定選択 (毎日 / 週次[曜日選択])
+- AppBar (保存ボタン)
+- タスクタイトル入力フィールド
+- 繰り返し種別選択 (日次/週次)
 - カテゴリ選択 (ドロップダウン or 別画面遷移)
-- 通知設定 (トグル + 時刻選択 - F020とは別)
-- 削除ボタン (編集時のみ表示)
-
-**ユーザーフロー (登録)**:
-1. タスク一覧画面のFABから遷移。
-2. 必要な情報を入力・選択する。
-3. 保存ボタンをタップしてタスクを保存し、タスク一覧画面に戻る。
-
-**ユーザーフロー (編集)**:
-1. タスク一覧画面で既存タスクをタップして遷移。
-2. 情報を編集する。
-3. 保存ボタンをタップして変更を保存し、タスク一覧画面に戻る。
-4. 削除ボタンをタップし、確認ダイアログを経てタスクを削除し、タスク一覧画面に戻る。
-
-#### S003: カテゴリ管理画面
-
-**主な構成要素**:
-- AppBar: タイトル、追加ボタン
-- カテゴリリスト: 既存カテゴリをリスト表示 (編集/削除ボタン付き)
-- カテゴリ追加/編集用ダイアログ or 画面
+- リマインダー時刻設定
+- (編集時) 削除ボタン
 
 **ユーザーフロー**:
-1. タスク一覧画面から遷移 (例: 設定画面経由)。
-2. 追加ボタンで新規カテゴリを作成する。
-3. リスト内のカテゴリを編集・削除する。
+1. S001から遷移後、各項目を入力/選択する。
+2. AppBarの保存ボタンでタスクを保存し、S001に戻る。
+3. (編集時) 削除ボタンタップで確認ダイアログ表示後、削除してS001に戻る。
 
-#### S004: 設定画面
-
-**主な構成要素**:
-- AppBar: タイトル
-- リマインダー設定セクション: 通知ON/OFFスイッチ、通知時刻設定
-- カテゴリ管理画面への導線
-- アプリ情報 (バージョンなど)
-
-**ユーザーフロー**:
-1. タスク一覧画面のAppBarアイコンから遷移。
-2. リマインダー設定を変更する。
-3. カテゴリ管理画面へ遷移する。
-
-#### S005: 獲得バッジ一覧画面
+#### 画面3: カテゴリ管理画面 (S003)
 
 **主な構成要素**:
-- AppBar: タイトル
-- バッジグリッド: 獲得したバッジをグリッド形式で表示 (アイコン、バッジ名)
-- 未獲得バッジの表示方法 (シルエット表示 or 非表示)
+- AppBar (戻るボタン)
+- カテゴリ一覧リスト (カテゴリ名、編集ボタン、削除ボタン)
+- 新規カテゴリ追加ボタン (FABなど)
 
 **ユーザーフロー**:
-1. 設定画面から遷移。
-2. 獲得したバッジの一覧を閲覧する。
+1. S001などから遷移。
+2. 登録済みカテゴリがリスト表示される。
+3. 新規追加ボタンタップ → カテゴリ名入力 → 保存 → リスト更新。
+4. 編集ボタンタップ → カテゴリ名編集 → 保存 → リスト更新。
+5. 削除ボタンタップ → 確認ダイアログ → 削除 → リスト更新。
+
+#### 画面4: 獲得バッジ一覧画面 (S004)
+
+**主な構成要素**:
+- AppBar (戻るボタン)
+- 獲得済みバッジ一覧 (グリッド or リスト形式、アイコン、名前、説明)
+
+**ユーザーフロー**:
+1. S001などから遷移。
+2. 獲得済みバッジが一覧表示される。
+3. (オプション) バッジタップで詳細表示。
+
+#### 画面5: 設定画面 (S005) (仮)
+
+**主な構成要素**:
+- AppBar (戻るボタン)
+- 通知設定 (ON/OFF, デフォルト時刻)
+- (オプション) データリセット
+- (オプション) バージョン情報
+
+**ユーザーフロー**:
+1. S001などから遷移。
+2. 各設定項目を表示・変更する。
 
 ## データモデル設計
 
-### エンティティ設計 (Domain Layer)
+### エンティティ設計 (Hive Box定義に近い形)
 
-#### Task (タスク)
+#### エンティティ1: Task
 
 ```dart
-// lib/src/feature/task/domain/entity/task.dart
-enum RepeatType { none, daily, weekly }
+@HiveType(typeId: 0)
+class Task extends HiveObject {
+  @HiveField(0)
+  late String id; // UUID
 
-class Task {
-  final String id; // UUID
-  final String name;
-  final String? categoryId;
-  final RepeatType repeatType;
-  final Set<int>? repeatWeekdays; // 曜日 (1-7, 月-日), weeklyの場合のみ
-  final bool enableNotification;
-  // final TimeOfDay? notificationTime; // 通知時刻は設定で一括管理
-  final DateTime createdAt;
-  final DateTime updatedAt;
+  @HiveField(1)
+  late String title;
 
-  Task({
-    required this.id,
-    required this.name,
-    this.categoryId,
-    required this.repeatType,
-    this.repeatWeekdays,
-    required this.enableNotification,
-    required this.createdAt,
-    required this.updatedAt,
-  });
+  @HiveField(2)
+  late bool isDaily; // true: 日次, false: 週次
+
+  @HiveField(3)
+  String? categoryId; // Categoryのid
+
+  @HiveField(4)
+  DateTime? reminderTime; // 時刻のみ relevant
+
+  // 完了記録: キー=日付(YYYYMMDD), 値=完了時刻(DateTime)
+  @HiveField(5)
+  late Map<String, DateTime> completionLog;
+
+  @HiveField(6)
+  late DateTime createdAt;
+
+  @HiveField(7)
+  late DateTime updatedAt;
 }
 ```
 
-#### Category (カテゴリ)
+#### エンティティ2: Category
 
 ```dart
-// lib/src/feature/category/domain/entity/category.dart
-class Category {
-  final String id; // UUID
-  final String name;
-  // final String colorCode; // 色分け用に追加しても良い
-  final DateTime createdAt;
-  final DateTime updatedAt;
+@HiveType(typeId: 1)
+class Category extends HiveObject {
+  @HiveField(0)
+  late String id; // UUID
 
-  Category({
-    required this.id,
-    required this.name,
-    required this.createdAt,
-    required this.updatedAt,
-  });
+  @HiveField(1)
+  late String name;
+
+  // (オプション) 色やアイコンなど
+  // @HiveField(2)
+  // String? colorCode;
+
+  @HiveField(2) // Index変更
+  late DateTime createdAt;
+
+  @HiveField(3)
+  late DateTime updatedAt;
 }
 ```
 
-#### TaskCompletion (タスク完了記録)
-
-日ごとの完了状態を記録するためのモデル。Taskエンティティとは別に管理する。
+#### エンティティ3: Badge
 
 ```dart
-// lib/src/feature/task/domain/entity/task_completion.dart
-class TaskCompletion {
-  final String taskId;
-  final DateTime date; // 完了した日付 (YYYY-MM-DD)
-  final bool isCompleted;
-  final DateTime completedAt;
+@HiveType(typeId: 2)
+class Badge extends HiveObject {
+  @HiveField(0)
+  late String id; // 固定ID (例: 'daily_streak_5')
 
-  TaskCompletion({
-    required this.taskId,
-    required this.date,
-    required this.isCompleted,
-    required this.completedAt,
-  });
+  @HiveField(1)
+  late String name;
+
+  @HiveField(2)
+  late String description;
+
+  @HiveField(3)
+  late String iconAssetPath; // アイコン画像パス
+
+  // 獲得したかどうかと日時を管理する別のBoxを用意する方が良いか検討
+  // @HiveField(4)
+  // DateTime? achievedAt;
 }
 ```
 
-#### Settings (設定)
+#### (検討) ユーザー進捗/設定
+- アチーブメント獲得状況 (Badge ID と獲得日時)
+- アプリ設定 (通知ON/OFF、デフォルト通知時刻など)
+- これらを別々のHive Boxで管理することを検討。
 
-```dart
-// lib/src/feature/settings/domain/entity/settings.dart
-class Settings {
-  final bool enableReminder;
-  final TimeOfDay reminderTime; // 通知時刻
-
-  Settings({
-    required this.enableReminder,
-    required this.reminderTime,
-  });
-}
-```
-
-#### Achievement (アチーブメント/バッジ定義)
-
-```dart
-// lib/src/feature/achievement/domain/entity/achievement.dart
-enum AchievementConditionType { firstTaskComplete, consecutiveTaskComplete, totalTaskComplete, ... }
-
-class Achievement {
-  final String id; // 例: 'first_complete', '7_day_streak'
-  final String name;
-  final String description;
-  final String iconAssetPath; // バッジ画像のパス
-  final AchievementConditionType conditionType;
-  final int conditionValue; // 条件値 (例: 連続日数、合計数)
-
-  Achievement({
-    required this.id,
-    required this.name,
-    required this.description,
-    required this.iconAssetPath,
-    required this.conditionType,
-    required this.conditionValue,
-  });
-}
-```
-
-#### UserAchievement (ユーザー獲得アチーブメント記録)
-
-```dart
-// lib/src/feature/achievement/domain/entity/user_achievement.dart
-class UserAchievement {
-  final String achievementId;
-  final DateTime achievedAt;
-
-  UserAchievement({
-    required this.achievementId,
-    required this.achievedAt,
-  });
-}
-```
-
-### データモデル (Data Layer - ローカル保存用)
-
-- ローカルDB (Hive推奨) に上記エンティティを保存する。
-- Hiveの場合は、`@HiveType` アノテーションを付与したアダプタークラスを作成する。
-- `TaskCompletion` は `(taskId, date)` を複合キーとして管理する。
-- `UserAchievement` は `achievementId` をキーとして管理する。
-
-### エンティティ関連図 (概念)
+### エンティティ関連図 (簡易)
 
 ```mermaid
-classDiagram
-    Task "*" -- "0..1" Category : belongs to
-    Task "1" -- "*" TaskCompletion : has completion records
-    Achievement "*" -- "*" UserAchievement : represents achieved
+erDiagram
+    TASK ||--o{ CATEGORY : "belongs to (optional)"
+    TASK {
+        String id PK
+        String title
+        bool isDaily
+        String categoryId FK
+        DateTime reminderTime
+        Map_String,DateTime_ completionLog
+        DateTime createdAt
+        DateTime updatedAt
+    }
+    CATEGORY {
+        String id PK
+        String name
+        DateTime createdAt
+        DateTime updatedAt
+    }
+    BADGE {
+        String id PK
+        String name
+        String description
+        String iconAssetPath
+    }
+    USER_PROGRESS {
+        String badgeId FK
+        DateTime achievedAt
+    }
+    BADGE ||--o{ USER_PROGRESS : "achieved by user"
 ```
-(Settingsは独立して管理)
+*注: USER_PROGRESS は獲得したバッジ情報を管理する概念的なエンティティ。HiveではBadge IDのリストやMapで管理する可能性が高い。*
 
 ## API設計
 
-- MVPでは外部API連携、内部API設計はなし。
+### 外部API連携 (該当する場合)
+
+- MVPでは外部API連携なし。
+
+### 内部API設計 (バックエンドがある場合)
+
+- MVPではバックエンドなし。
 
 ## セキュリティ設計
 
-- **認証・認可方式**: MVPではなし。
-- **データ保護**: ローカルストレージに保存されるデータについては、OSレベルの保護に依存する。機密性の高い情報（個人情報など）は保存しない。
-- **通信の暗号化**: なし (外部通信がないため)。
+### 認証・認可方式
+
+- MVPでは認証・認可機能なし。データはローカルにのみ保存。
+
+### データ保護
+
+- ローカルデータ (Hive Box) はOSレベルの保護に依存。機密性の高い情報（個人情報、パスワード等）はMVPスコープでは扱わない。
+- 将来的に同期機能を実装する場合は、HTTPS通信、適切な認証、サーバーサイドでのデータ暗号化が必須。
 
 ## 性能最適化計画
 
-- **画像最適化**: [方針]
-- **オフライン対応**: [方針]
-- **メモリ使用量最適化**: [方針]
+- **UI**: Flutterの最適化手法（const widget, RepaintBoundary等）を活用し、スムーズな描画を目指す。
+- **データアクセス**: HiveのクエリやBox操作を効率的に行い、リスト表示等のパフォーマンスを確保する。大量データ時の影響を考慮する。
+- **画像最適化**: アチーブメントバッジ等の画像リソースは適切なサイズ・形式を使用する。
+- **オフライン対応**: ローカルDB前提のため、基本的にオフラインで動作。
+- **メモリ使用量最適化**: Riverpod Providerの適切なスコープ管理、不要なオブジェクトの破棄。
 
 ## 技術的意思決定
 
 |決定事項|選択したオプション|代替案|選択理由|
 |---|---|---|---|
-|状態管理|Riverpod|Provider, BLoC/Cubit, GetX|学習コスト、DI機能、テスト容易性のバランスが良いと判断。|
-|ローカルDB|Hive|SharedPreferences, SQLite (sqflite)|オブジェクト指向のデータ保存に適しており、パフォーマンスも比較的高いため。SharedPreferencesは単純なキーバリューには良いが、構造化データには不向き。SQLiteは強力だが、セットアップやマイグレーションがやや煩雑。|
-|ローカル通知|flutter_local_notifications|awesome_notifications|Flutter公式推奨であり、十分な機能を提供しているため。|
-|UUID生成|uuid|nanoid|標準的で広く使われているため。|
+|状態管理|Riverpod|Provider, GetX, Bloc|学習コスト、依存性注入、テスト容易性のバランス|
+|ローカルDB|Hive|SQLite (sqflite), SharedPreferences|オブジェクト指向DB、パフォーマンス、セットアップの容易さ|
+|ローカル通知|flutter_local_notifications|firebase_messaging (FCM)|FCMはサーバー連携前提のため、ローカル完結のMVPには不向き|
+|ID生成|uuid|タイムスタンプベースID|グローバルな一意性が保証されるため|
 
 ## サードパーティライブラリ
 
 |ライブラリ名|バージョン|用途|選定理由|
 |---|---|---|---|
-|flutter_riverpod|^2.x.x|状態管理、DI|上記参照|
-|hive|^2.x.x|ローカルDB|上記参照|
-|hive_flutter|^1.x.x|HiveのFlutterインテグレーション|必須|
-|path_provider|^2.x.x|ローカルストレージのパス取得|Hiveの初期化に必要|
-|flutter_local_notifications|^16.x.x|ローカル通知|上記参照|
-|uuid|^4.x.x|一意ID生成|エンティティID生成のため|
-|intl|^0.18.x|日付/時刻フォーマット|表示や通知のため|
+|flutter_riverpod|^[latest]|状態管理、依存性注入|主要な状態管理手法として採用|
+|hive|^[latest]|ローカルデータ永続化|主要なローカルDBとして採用|
+|hive_flutter|^[latest]|HiveとFlutterの連携|Hive利用に必須|
+|flutter_local_notifications|^[latest]|ローカル通知の実装|主要機能のため|
+|path_provider|^[latest]|ファイルシステムパス取得|Hiveの初期化に必要|
+|uuid|^[latest]|一意なID生成|エンティティID生成のため|
+|intl|^[latest]|日付・時刻フォーマット|表示やログ記録のため|
 
 ## 既知の制限事項
 
-- MVP段階では複数デバイス間のデータ同期はできない。
-- MVP段階ではユーザーアカウントによるデータ保護はない。
-- オフラインでのデータ編集中にアプリが強制終了した場合のデータ整合性については、追加の考慮が必要な場合がある。
+- **データ永続性**: アプリのアンインストールでデータは消失する (ローカル保存のみ)。
+- **マルチデバイス非対応**: データ同期機能がないため、複数デバイスでの利用は想定しない。
+- **バックグラウンド処理**: ローカル通知以外の厳密なバックグラウンド処理は実装しない。
+- **Hiveマイグレーション**: データモデル変更時のマイグレーションは考慮が必要だが、MVPではシンプルな構造に留める。
 
 ## 将来の拡張性計画
 
-- ユーザー認証機能の追加 (Firebase Authenticationなど)
-- クラウドDB連携による複数デバイス同期 (Firestoreなど)
-- カレンダービューの追加
-- **ゲーミフィケーション要素の拡張:**
-    - アチーブメント/バッジの種類追加、難易度調整
-    - ポイント/経験値システム
-    - レベルアップ/ランクシステム
-    - キャラクター育成/バーチャルペット
-- タスクの並び替え、優先度設定機能
-- より詳細な統計・分析機能
+- **認証・同期**: Phase 2以降でFirebase AuthenticationやCloud Firestore/Supabase等を利用した認証・データ同期機能の追加を検討。
+- **カレンダー表示**: タスクをカレンダー形式で表示する機能。
+- **統計・レポート**: タスク完了率などの統計情報を表示する機能。
+- **共有機能**: タスクや進捗を他ユーザーと共有する機能。
