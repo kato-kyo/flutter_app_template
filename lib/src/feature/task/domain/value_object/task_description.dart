@@ -1,10 +1,14 @@
+import 'package:freezed_annotation/freezed_annotation.dart';
+
 import '../../../../core/util/result.dart';
 
-/// タスクの説明を表現する値オブジェクト
-class TaskDescription {
-  final String value;
+part 'task_description.freezed.dart';
 
-  const TaskDescription._(this.value);
+/// タスクの説明を表現する値オブジェクト
+@freezed
+class TaskDescription with _$TaskDescription {
+  /// プライベートコンストラクタ
+  const factory TaskDescription({required String value}) = _TaskDescription;
 
   /// タスクの説明を検証して生成
   static Result<TaskDescription> create(String input) {
@@ -14,8 +18,11 @@ class TaskDescription {
       return Result.failure(DomainError('タスクの説明は1000文字以内で入力してください'));
     }
 
-    return Result.success(TaskDescription._(trimmedInput));
+    return Result.success(TaskDescription(value: trimmedInput));
   }
+
+  /// カスタムメソッド用コンストラクタ
+  const TaskDescription._();
 
   @override
   bool operator ==(Object other) =>

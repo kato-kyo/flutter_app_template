@@ -1,23 +1,23 @@
-/// カテゴリIDを表現する値オブジェクト
-class CategoryId {
-  final String value;
+import 'package:freezed_annotation/freezed_annotation.dart';
 
-  const CategoryId._(this.value);
+part 'category_id.freezed.dart';
+
+/// カテゴリIDを表現する値オブジェクト
+@freezed
+class CategoryId with _$CategoryId {
+  /// プライベートコンストラクタ
+  const factory CategoryId({required String value}) = _CategoryId;
 
   /// 文字列からCategoryIdを生成
   factory CategoryId.fromString(String value) {
     if (value.isEmpty) {
       throw ArgumentError('CategoryId cannot be empty');
     }
-    return CategoryId._(value);
+    return CategoryId(value: value);
   }
 
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) || other is CategoryId && value == other.value;
-
-  @override
-  int get hashCode => value.hashCode;
+  /// カスタムメソッド用コンストラクタ
+  const CategoryId._();
 
   @override
   String toString() => 'CategoryId($value)';

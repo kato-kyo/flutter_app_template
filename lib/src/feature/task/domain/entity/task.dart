@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:freezed_annotation/freezed_annotation.dart';
 
 import '../../../../core/util/result.dart';
 import '../value_object/category_id.dart';
@@ -7,35 +8,34 @@ import '../value_object/task_description.dart';
 import '../value_object/task_id.dart';
 import '../value_object/task_name.dart';
 
+part 'task.freezed.dart';
+
 /// タスクエンティティクラス
-class Task {
-  /// タスクID
-  final TaskId id;
-
-  /// タスク名
-  final TaskName name;
-
-  /// タスクの説明
-  final TaskDescription description;
-
-  /// 繰り返しタイプ
-  final RepeatType repeatType;
-
-  /// カテゴリID (任意)
-  final CategoryId? categoryId;
-
-  /// リマインダー時刻 (任意)
-  final TimeOfDay? reminderTime;
-
+@freezed
+class Task with _$Task {
   /// コンストラクタ
-  const Task({
-    required this.id,
-    required this.name,
-    required this.description,
-    required this.repeatType,
-    this.categoryId,
-    this.reminderTime,
-  });
+  const factory Task({
+    /// タスクID
+    required TaskId id,
+
+    /// タスク名
+    required TaskName name,
+
+    /// タスクの説明
+    required TaskDescription description,
+
+    /// 繰り返しタイプ
+    required RepeatType repeatType,
+
+    /// カテゴリID (任意)
+    CategoryId? categoryId,
+
+    /// リマインダー時刻 (任意)
+    TimeOfDay? reminderTime,
+  }) = _Task;
+
+  /// カスタムメソッド用コンストラクタ
+  const Task._();
 
   /// タスクを検証
   static Result<void> validateTask(
@@ -88,7 +88,7 @@ class Task {
   }
 
   /// 名前付きコンストラクタ：既存IDでタスクを再構築
-  factory Task.reconstitute({
+  static Task reconstitute({
     required String id,
     required String name,
     String description = '',
@@ -122,55 +122,10 @@ class Task {
     );
   }
 
-  /// タスク内容を更新したコピーを作成
-  Task copyWith({
-    TaskName? name,
-    TaskDescription? description,
-    RepeatType? repeatType,
-    CategoryId? categoryId,
-    TimeOfDay? reminderTime,
-    bool clearCategoryId = false,
-    bool clearReminderTime = false,
-  }) {
-    return Task(
-      id: id,
-      name: name ?? this.name,
-      description: description ?? this.description,
-      repeatType: repeatType ?? this.repeatType,
-      categoryId: clearCategoryId ? null : (categoryId ?? this.categoryId),
-      reminderTime:
-          clearReminderTime ? null : (reminderTime ?? this.reminderTime),
-    );
-  }
-
-  @override
-  bool operator ==(Object other) {
-    if (identical(this, other)) return true;
-    return other is Task &&
-        id == other.id &&
-        name == other.name &&
-        description == other.description &&
-        repeatType == other.repeatType &&
-        categoryId == other.categoryId &&
-        _compareTimeOfDay(reminderTime, other.reminderTime);
-  }
-
-  /// TimeOfDayを比較
-  bool _compareTimeOfDay(TimeOfDay? a, TimeOfDay? b) {
+  /// TimeOfDayを比較するヘルパーメソッド
+  static bool compareTimeOfDay(TimeOfDay? a, TimeOfDay? b) {
     if (a == null && b == null) return true;
     if (a == null || b == null) return false;
     return a.hour == b.hour && a.minute == b.minute;
   }
-
-  @override
-  int get hashCode => Object.hash(
-    id,
-    name,
-    description,
-    repeatType,
-    categoryId,
-    reminderTime != null
-        ? '${reminderTime!.hour}:${reminderTime!.minute}'
-        : null,
-  );
 }

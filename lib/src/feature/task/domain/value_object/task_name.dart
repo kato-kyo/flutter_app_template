@@ -1,10 +1,14 @@
+import 'package:freezed_annotation/freezed_annotation.dart';
+
 import '../../../../core/util/result.dart';
 
-/// タスク名を表現する値オブジェクト
-class TaskName {
-  final String value;
+part 'task_name.freezed.dart';
 
-  const TaskName._(this.value);
+/// タスク名を表現する値オブジェクト
+@freezed
+class TaskName with _$TaskName {
+  /// プライベートコンストラクタ
+  const factory TaskName({required String value}) = _TaskName;
 
   /// タスク名を検証して生成
   static Result<TaskName> create(String input) {
@@ -18,15 +22,11 @@ class TaskName {
       return Result.failure(DomainError('タスク名は50文字以内で入力してください'));
     }
 
-    return Result.success(TaskName._(input.trim()));
+    return Result.success(TaskName(value: input.trim()));
   }
 
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) || other is TaskName && value == other.value;
-
-  @override
-  int get hashCode => value.hashCode;
+  /// カスタムメソッド用コンストラクタ
+  const TaskName._();
 
   @override
   String toString() => 'TaskName($value)';
