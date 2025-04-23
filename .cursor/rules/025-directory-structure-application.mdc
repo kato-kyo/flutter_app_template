@@ -20,9 +20,10 @@ alwaysApply: false
 例:
 ```
 feature/
- |- auth/  # feature_name
- |  |- application/ 
- |  |  |- login_service.dart 
+├── auth/  # feature_name
+│   └── application/ 
+│       ├── login_service.dart 
+│       └── register_service.dart
 ```
 
 ## applicationレイヤーの概要
