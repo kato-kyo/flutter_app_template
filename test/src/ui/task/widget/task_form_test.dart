@@ -80,15 +80,14 @@ void main() {
   testWidgets('Save button shows loading indicator when submitting', (
     WidgetTester tester,
   ) async {
-    // モックプロバイダーを作成して初期状態を設定
-    final mockProvider = StateProvider<TaskFormState>((ref) {
-      return TaskFormState(isSubmitting: true);
-    });
-
     // カスタムProviderScopeでTaskFormをレンダリング
     await tester.pumpWidget(
       ProviderScope(
-        overrides: [taskFormStateProvider.overrideWithProvider(mockProvider)],
+        overrides: [
+          taskFormStateProvider.overrideWith(
+            (ref) => TaskFormState(isSubmitting: true),
+          ),
+        ],
         child: const MaterialApp(home: Scaffold(body: TaskForm())),
       ),
     );
